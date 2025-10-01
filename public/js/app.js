@@ -223,3 +223,184 @@ async function returnBook(loanId) {
 document.addEventListener('DOMContentLoaded', function() {
     loadBooks();
 });
+// Authentication state
+let currentUser = null;
+let authToken = null;
+
+// Check if user is logged in on page load
+document.addEventListener('DOMContentLoaded', function() {
+    checkAuthStatus();
+});
+
+// Authentication functions
+async function login(email, password) {
+    try {
+        const response = await fetch('/auth/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email, password })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            authToken = data.token;
+            currentUser = data.user;
+            localStorage.setItem('authToken', authToken);
+            localStorage.setItem('user', JSON.stringify(currentUser));
+            updateUIForAuth();
+            closeModals();
+            loadBooks();
+        } else {
+            alert(data.error);
+        }
+    } catch (error) {
+        console.error('Login error:', error);
+        alert('Login failed');
+    }
+}
+
+async function signup(name, email, password) {
+    try {
+        const response = await fetch('/auth/signup', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name, email, password })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            alert('Account created successfully! Please login.');
+            showLogin();
+        } else {
+            alert(data.error);
+        }
+    } catch (error) {
+        console.error('Signup error:', error);
+        alert('Signup failed');
+    }
+}
+
+function checkAuthStatus() {
+    const savedToken = localStorage.getItem('authToken');
+    const savedUser = localStorage.getItem('user');
+    
+    if (savedToken && savedUser) {
+        authToken = savedToken;
+        currentUser = JSON.parse(savedUser);
+        updateUIForAuth();
+        loadBooks();
+    } else {
+        showLogin();
+    }
+}
+
+function updateUIForAuth() {
+    if (currentUser) {
+        document.getElementById('user-name').textContent = currentUser.name;
+        document.getElementById('user-info').style.display = 'block';
+        // Show management sections
+        document.querySelector('nav').style.display = 'flex';
+    } else {
+        document.getElementById('user-info').style.display = 'none';
+        document.querySelector('nav').style.display = 'none';
+    }
+}
+
+function logout() {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
+    authToken = null;
+    currentUser = null;
+    updateUIForAuth();
+    showLogin();
+}
+
+// Modal functions
+function showLogin() {
+    document.getElementById('loginModal').style.display = 'block';
+}
+
+function showSignup() {
+    document.getElementById('loginModal').style.display = 'none';
+    document.getElementById('signupModal').style.display = 'block';
+}
+
+function closeModals() {
+    document.getElementById('loginModal').style.display = 'none';
+    document.getElementById('signupModal').style.display = 'none';
+}
+
+// Search functionality
+async function searchBooks(query) {
+    try {
+        const response = await fetch(`/books/search?q=${encodeURIComponent(query)}`, {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        
+        if (response.ok) {
+            const books = await response.json();
+            displaySearchResults(books);
+        }
+    } catch (error) {
+        console.error('Search error:', error);
+    }
+}
+
+// Update your existing API calls to include authentication headers
+function getAuthHeaders() {
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+    };
+}
+
+// Update all your fetch calls to use getAuthHeaders()
+// Example for loadBooks:
+async function loadBooks() {
+    if (!authToken) return;
+    
+    try {
+        const response = await fetch('/books', {
+            headers: getAuthHeaders()
+        });
+        // ... rest of your existing loadBooks code
+    } catch (error) {
+        console.error('Error loading books:', error);
+    }
+}
+
+// Add event listeners for login/signup forms
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    await login(email, password);
+});
+
+document.getElementById('signup-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('signup-name').value;
+    const email = document.getElementById('signup-email').value;
+    const password = document.getElementById('signup-password').value;
+    await signup(name, email, password);
+});
+
+// Close modals when clicking X
+document.querySelectorAll('.close').forEach(closeBtn => {
+    closeBtn.addEventListener('click', closeModals);
+});
+
+// Close modals when clicking outside
+window.addEventListener('click', (e) => {
+    if (e.target.classList.contains('modal')) {
+        closeModals();
+    }
+});

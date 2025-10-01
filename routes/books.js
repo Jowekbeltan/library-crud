@@ -23,6 +23,29 @@ router.get('/', (req, res) => {
     });
 });
 
+// SEARCH Books - ADD THIS TO YOUR EXISTING books.js
+router.get('/search', (req, res) => {
+    const { q } = req.query;
+    
+    if (!q || q.trim() === '') {
+        return res.status(400).json({ error: 'Search query is required' });
+    }
+
+    const searchTerm = `%${q}%`;
+    const sql = `
+        SELECT * FROM books 
+        WHERE title LIKE ? OR author LIKE ? OR isbn LIKE ?
+        ORDER BY title
+    `;
+    
+    db.query(sql, [searchTerm, searchTerm, searchTerm], (err, results) => {
+        if (err) {
+            console.error('Search error:', err);
+            return res.status(500).json({ error: 'Database search error' });
+        }
+        res.json(results);
+    });
+});
 // READ Single Book
 router.get('/:id', (req, res) => {
     const { id } = req.params;

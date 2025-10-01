@@ -187,3 +187,40 @@ button.delete:hover {
         grid-template-columns: 1fr;
     }
 }
+/* Search Styles - ADD TO EXISTING CSS */
+.search-container {
+    display: flex;
+    gap: 10px;
+    margin: 20px 0;
+    align-items: center;
+}
+
+.search-container input {
+    flex: 1;
+    padding: 12px 20px;
+    border: 2px solid #ddd;
+    border-radius: 25px;
+    font-size: 16px;
+    transition: border-color 0.3s ease;
+}
+
+.search-container input:focus {
+    outline: none;
+    border-color: #3498db;
+}
+
+.search-container button {
+    background: #95a5a6;
+    padding: 12px 20px;
+    white-space: nowrap;
+}
+
+.search-container button:hover {
+    background: #7f8c8d;
+}
+
+.search-highlight {
+    background-color: #fff3cd;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
