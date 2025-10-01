@@ -6,11 +6,11 @@ const db = require('../db');
 router.post('/', (req, res) => {
   const { user_id, book_id, reservation_date } = req.body;
   db.query(
-    'INSERT INTO Reservations (user_id, book_id, reservation_date, status) VALUES (?, ?, ?, ?)',
-    [user_id, book_id, reservation_date, 'Pending'],
+    'INSERT INTO reservations (user_id, book_id, reservation_date) VALUES (?, ?, ?)',
+    [user_id, book_id, reservation_date],
     (err, result) => {
       if (err) return res.status(500).json(err);
-      res.json({ id: result.insertId, user_id, book_id, reservation_date, status: 'Pending' });
+      res.json({ id: result.insertId, user_id, book_id, reservation_date, status: 'active' });
     }
   );
 });
@@ -18,10 +18,10 @@ router.post('/', (req, res) => {
 // READ All Reservations
 router.get('/', (req, res) => {
   db.query(
-    `SELECT r.reservation_id, u.full_name AS user, b.title AS book, r.reservation_date, r.status
-     FROM Reservations r
-     JOIN Users u ON r.user_id = u.user_id
-     JOIN Books b ON r.book_id = b.book_id`,
+    `SELECT r.id, u.name AS user, b.title AS book, r.reservation_date, r.status
+     FROM reservations r
+     JOIN users u ON r.user_id = u.id
+     JOIN books b ON r.book_id = b.id`,  // Fixed all column and table names
     (err, rows) => {
       if (err) return res.status(500).json(err);
       res.json(rows);
@@ -29,12 +29,12 @@ router.get('/', (req, res) => {
   );
 });
 
-// UPDATE Reservation (change status)
+// UPDATE Reservation
 router.put('/:id', (req, res) => {
   const { id } = req.params;
-  const { status } = req.body; // Pending, Fulfilled, Cancelled
+  const { status } = req.body;
   db.query(
-    'UPDATE Reservations SET status=? WHERE reservation_id=?',
+    'UPDATE reservations SET status=? WHERE id=?',  // Fixed column name
     [status, id],
     (err, result) => {
       if (err) return res.status(500).json(err);
@@ -46,7 +46,7 @@ router.put('/:id', (req, res) => {
 // DELETE Reservation
 router.delete('/:id', (req, res) => {
   const { id } = req.params;
-  db.query('DELETE FROM Reservations WHERE reservation_id=?', [id], (err, result) => {
+  db.query('DELETE FROM reservations WHERE id=?', [id], (err, result) => {  // Fixed column name
     if (err) return res.status(500).json(err);
     res.json({ message: 'Reservation deleted' });
   });

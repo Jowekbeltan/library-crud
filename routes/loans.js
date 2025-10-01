@@ -2,11 +2,11 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 
-// CREATE Loan (User borrows a book)
+// CREATE Loan
 router.post('/', (req, res) => {
   const { user_id, book_id, loan_date, due_date } = req.body;
   db.query(
-    'INSERT INTO Loans (user_id, book_id, loan_date, due_date) VALUES (?, ?, ?, ?)',
+    'INSERT INTO loans (user_id, book_id, loan_date, due_date) VALUES (?, ?, ?, ?)',
     [user_id, book_id, loan_date, due_date],
     (err, result) => {
       if (err) return res.status(500).json(err);
@@ -18,10 +18,10 @@ router.post('/', (req, res) => {
 // READ All Loans
 router.get('/', (req, res) => {
   db.query(
-    `SELECT l.loan_id, u.full_name AS user, b.title AS book, l.loan_date, l.due_date, l.return_date
-     FROM Loans l
-     JOIN Users u ON l.user_id = u.user_id
-     JOIN Books b ON l.book_id = b.book_id`,
+    `SELECT l.id, u.name AS user, b.title AS book, l.loan_date, l.due_date, l.return_date, l.status
+     FROM loans l
+     JOIN users u ON l.user_id = u.id
+     JOIN books b ON l.book_id = b.id`,  // Fixed all column and table names
     (err, rows) => {
       if (err) return res.status(500).json(err);
       res.json(rows);
@@ -34,7 +34,7 @@ router.put('/:id/return', (req, res) => {
   const { id } = req.params;
   const { return_date } = req.body;
   db.query(
-    'UPDATE Loans SET return_date=? WHERE loan_id=?',
+    'UPDATE loans SET return_date=?, status="returned" WHERE id=?',  // Fixed column names
     [return_date, id],
     (err, result) => {
       if (err) return res.status(500).json(err);
@@ -43,10 +43,10 @@ router.put('/:id/return', (req, res) => {
   );
 });
 
-// DELETE Loan (remove record)
+// DELETE Loan
 router.delete('/:id', (req, res) => {
   const { id } = req.params;
-  db.query('DELETE FROM Loans WHERE loan_id=?', [id], (err, result) => {
+  db.query('DELETE FROM loans WHERE id=?', [id], (err, result) => {  // Fixed column name
     if (err) return res.status(500).json(err);
     res.json({ message: 'Loan deleted' });
   });

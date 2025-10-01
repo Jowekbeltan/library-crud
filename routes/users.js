@@ -4,20 +4,20 @@ const db = require('../db');
 
 // CREATE user
 router.post('/', (req, res) => {
-  const { full_name, email, phone, role } = req.body;
+  const { name, email } = req.body;  // Changed from full_name to name
   db.query(
-    'INSERT INTO Users (full_name, email, phone, role) VALUES (?, ?, ?, ?)',
-    [full_name, email, phone, role],
+    'INSERT INTO users (name, email) VALUES (?, ?)',  // Fixed table and column names
+    [name, email],
     (err, result) => {
       if (err) return res.status(500).json(err);
-      res.json({ id: result.insertId, full_name, email, phone, role });
+      res.json({ id: result.insertId, name, email });
     }
   );
 });
 
 // READ all users
 router.get('/', (req, res) => {
-  db.query('SELECT * FROM Users', (err, rows) => {
+  db.query('SELECT * FROM users', (err, rows) => {  // Fixed table name
     if (err) return res.status(500).json(err);
     res.json(rows);
   });
