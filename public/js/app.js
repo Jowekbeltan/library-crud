@@ -555,3 +555,142 @@ document.addEventListener('DOMContentLoaded', function() {
         loadDashboard();
     }
 });
+// Dashboard Functions - REPLACE THIS SECTION
+async function loadDashboard() {
+    if (!authToken) {
+        console.log('No auth token - skipping dashboard load');
+        return;
+    }
+    
+    console.log('Loading dashboard data...');
+    
+    try {
+        // Load all data
+        const booksResponse = await fetch('/books', { headers: getAuthHeaders() });
+        const usersResponse = await fetch('/users', { headers: getAuthHeaders() });
+        const loansResponse = await fetch('/loans', { headers: getAuthHeaders() });
+        const reservationsResponse = await fetch('/reservations', { headers: getAuthHeaders() });
+
+        // Check if responses are OK
+        if (!booksResponse.ok || !usersResponse.ok || !loansResponse.ok || !reservationsResponse.ok) {
+            throw new Error('Failed to fetch dashboard data');
+        }
+
+        const books = await booksResponse.json();
+        const users = await usersResponse.json();
+        const loans = await loansResponse.json();
+        const reservations = await reservationsResponse.json();
+
+        console.log('Dashboard data loaded:', { books, users, loans, reservations });
+        
+        updateDashboardStats(books, users, loans, reservations);
+        displayAvailableBooks(books);
+        displayRecentReservations(reservations);
+        displayRecentUsers(users);
+        
+    } catch (error) {
+        console.error('Error loading dashboard:', error);
+        // Show error message to user
+        document.getElementById('available-books-list').innerHTML = '<p class="mini-card">Error loading data</p>';
+    }
+}
+// Profile Functions
+async function loadProfile() {
+    if (!currentUser) return;
+    
+    try {
+        // Update basic profile info
+        document.getElementById('profile-name').textContent = currentUser.name;
+        document.getElementById('profile-email').textContent = currentUser.email;
+        document.getElementById('member-since').textContent = 'Recently'; // You can enhance this with actual user data
+        
+        // Load user-specific data
+        const [loans, reservations] = await Promise.all([
+            fetch('/loans', { headers: getAuthHeaders() }).then(r => r.json()),
+            fetch('/reservations', { headers: getAuthHeaders() }).then(r => r.json())
+        ]);
+        
+        // Calculate user stats
+        const userLoans = loans.filter(loan => loan.user === currentUser.name);
+        const userReservations = reservations.filter(res => res.user === currentUser.name);
+        const activeReservations = userReservations.filter(res => res.status === 'active');
+        
+        document.getElementById('books-borrowed').textContent = userLoans.length;
+        document.getElementById('active-reservations').textContent = activeReservations.length;
+        
+        // Display recent activity
+        displayUserActivity(userLoans, userReservations);
+        
+    } catch (error) {
+        console.error('Error loading profile:', error);
+    }
+}
+
+function displayUserActivity(loans, reservations) {
+    const activityContainer = document.getElementById('user-activity');
+    
+    // Combine and sort activities by date
+    const activities = [
+        ...loans.map(loan => ({
+            type: 'loan',
+            title: `Borrowed "${loan.book}"`,
+            date: loan.loan_date,
+            recent: isRecent(loan.loan_date)
+        })),
+        ...reservations.map(res => ({
+            type: 'reservation', 
+            title: `Reserved "${res.book}"`,
+            date: res.reservation_date,
+            recent: isRecent(res.reservation_date)
+        }))
+    ].sort((a, b) => new Date(b.date) - new Date(a.date))
+     .slice(0, 10); // Show latest 10 activities
+    
+    if (activities.length === 0) {
+        activityContainer.innerHTML = '<p>No recent activity</p>';
+        return;
+    }
+    
+    activityContainer.innerHTML = activities.map(activity => `
+        <div class="activity-item ${activity.recent ? 'recent' : 'old'}">
+            <h4>${activity.title}</h4>
+            <p>${new Date(activity.date).toLocaleDateString()} • ${activity.type === 'loan' ? '📖 Loan' : '📅 Reservation'}</p>
+        </div>
+    `).join('');
+}
+
+function isRecent(dateString) {
+    const activityDate = new Date(dateString);
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    return activityDate > sevenDaysAgo;
+}
+
+function changePassword() {
+    alert('Password change feature coming soon!');
+    // You can implement a password change modal here
+}
+
+// Update loadSectionData to include profile
+function loadSectionData(section) {
+    switch(section) {
+        case 'dashboard':
+            loadDashboard();
+            break;
+        case 'books':
+            loadBooks();
+            break;
+        case 'users':
+            loadUsers();
+            break;
+        case 'loans':
+            loadLoans();
+            break;
+        case 'reservations':
+            loadReservations();
+            break;
+        case 'profile':
+            loadProfile();
+            break;
+    }
+}
