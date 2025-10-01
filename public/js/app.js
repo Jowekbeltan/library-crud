@@ -404,3 +404,154 @@ window.addEventListener('click', (e) => {
         closeModals();
     }
 });
+// Dashboard Functions
+async function loadDashboard() {
+    if (!authToken) return;
+    
+    try {
+        // Load all data in parallel for better performance
+        const [books, users, loans, reservations] = await Promise.all([
+            fetch('/books', { headers: getAuthHeaders() }).then(r => r.json()),
+            fetch('/users', { headers: getAuthHeaders() }).then(r => r.json()),
+            fetch('/loans', { headers: getAuthHeaders() }).then(r => r.json()),
+            fetch('/reservations', { headers: getAuthHeaders() }).then(r => r.json())
+        ]);
+        
+        updateDashboardStats(books, users, loans, reservations);
+        displayAvailableBooks(books);
+        displayRecentReservations(reservations);
+        displayRecentUsers(users);
+        
+    } catch (error) {
+        console.error('Error loading dashboard:', error);
+    }
+}
+
+function updateDashboardStats(books, users, loans, reservations) {
+    // Calculate statistics
+    const totalBooks = books.length;
+    const availableBooks = books.filter(book => book.status === 'available').length;
+    const borrowedBooks = books.filter(book => book.status === 'borrowed').length;
+    const totalUsers = users.length;
+    const activeLoans = loans.filter(loan => loan.status === 'active').length;
+    const totalReservations = reservations.length;
+    
+    // Update stat cards
+    document.getElementById('total-books').textContent = totalBooks;
+    document.getElementById('available-books').textContent = availableBooks;
+    document.getElementById('borrowed-books').textContent = borrowedBooks;
+    document.getElementById('total-users').textContent = totalUsers;
+    document.getElementById('active-loans').textContent = activeLoans;
+    document.getElementById('total-reservations').textContent = totalReservations;
+}
+
+function displayAvailableBooks(books) {
+    const container = document.getElementById('available-books-list');
+    const availableBooks = books
+        .filter(book => book.status === 'available')
+        .slice(0, 50); // Show latest 50 available books
+    
+    if (availableBooks.length === 0) {
+        container.innerHTML = '<p class="mini-card">No available books</p>';
+        return;
+    }
+    
+    container.innerHTML = availableBooks.map(book => `
+        <div class="mini-card">
+            <h4>${book.title}</h4>
+            <p><strong>Author:</strong> ${book.author}</p>
+            <p><strong>ISBN:</strong> ${book.isbn || 'N/A'}</p>
+            <span class="status-badge status-available">Available</span>
+        </div>
+    `).join('');
+}
+
+function displayRecentReservations(reservations) {
+    const container = document.getElementById('reservations-list');
+    const recentReservations = reservations
+        .slice(0, 10) // Show latest 10 reservations
+    
+    if (recentReservations.length === 0) {
+        container.innerHTML = '<p class="mini-card">No reservations</p>';
+        return;
+    }
+    
+    container.innerHTML = recentReservations.map(reservation => `
+        <div class="mini-card">
+            <h4>${reservation.book}</h4>
+            <p><strong>User:</strong> ${reservation.user}</p>
+            <p><strong>Date:</strong> ${new Date(reservation.reservation_date).toLocaleDateString()}</p>
+            <span class="status-badge status-reserved">${reservation.status}</span>
+        </div>
+    `).join('');
+}
+
+function displayRecentUsers(users) {
+    const container = document.getElementById('recent-users-list');
+    const recentUsers = users
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        .slice(0, 10); // Show latest 10 users
+    
+    if (recentUsers.length === 0) {
+        container.innerHTML = '<p class="mini-card">No users</p>';
+        return;
+    }
+    
+    container.innerHTML = recentUsers.map(user => `
+        <div class="mini-card">
+            <h4>${user.name}</h4>
+            <p><strong>Email:</strong> ${user.email}</p>
+            <p><strong>Joined:</strong> ${new Date(user.created_at).toLocaleDateString()}</p>
+        </div>
+    `).join('');
+}
+
+// Update the showSection function to handle dashboard
+function showSection(sectionName) {
+    // Hide all sections
+    document.querySelectorAll('.section').forEach(section => {
+        section.classList.remove('active');
+    });
+    
+    // Remove active class from all buttons
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Show selected section and activate button
+    document.getElementById(sectionName + '-section').classList.add('active');
+    event.target.classList.add('active');
+    
+    // Load data for the section
+    loadSectionData(sectionName);
+}
+
+// Update loadSectionData to include dashboard
+function loadSectionData(section) {
+    switch(section) {
+        case 'dashboard':
+            loadDashboard();
+            break;
+        case 'books':
+            loadBooks();
+            break;
+        case 'users':
+            loadUsers();
+            break;
+        case 'loans':
+            loadLoans();
+            break;
+        case 'reservations':
+            loadReservations();
+            break;
+    }
+}
+
+// Update the DOMContentLoaded to start with dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    checkAuthStatus();
+    // Load dashboard by default when authenticated
+    if (currentUser) {
+        loadDashboard();
+    }
+});

@@ -11,12 +11,83 @@
         <header>
             <h1>📚 Library Management System</h1>
             <nav>
-                <button class="nav-btn active" onclick="showSection('books')">Books</button>
-                <button class="nav-btn" onclick="showSection('users')">Users</button>
-                <button class="nav-btn" onclick="showSection('loans')">Loans</button>
-                <button class="nav-btn" onclick="showSection('reservations')">Reservations</button>
-            </nav>
+    <button class="nav-btn active" onclick="showSection('dashboard')">Dashboard</button>
+    <button class="nav-btn" onclick="showSection('books')">Books</button>
+    <button class="nav-btn" onclick="showSection('users')">Users</button>
+    <button class="nav-btn" onclick="showSection('loans')">Loans</button>
+    <button class="nav-btn" onclick="showSection('reservations')">Reservations</button>
+</nav>
         </header>
+
+        <!-- Dashboard Section -->
+<section id="dashboard-section" class="section active">
+    <h2>📊 Library Dashboard</h2>
+    
+    <div class="stats-container">
+        <div class="stat-card">
+            <h3>📚 Total Books</h3>
+            <div class="stat-number" id="total-books">0</div>
+            <p>In library collection</p>
+        </div>
+        
+        <div class="stat-card">
+            <h3>✅ Available Books</h3>
+            <div class="stat-number" id="available-books">0</div>
+            <p>Ready to borrow</p>
+        </div>
+        
+        <div class="stat-card">
+            <h3>📖 Borrowed Books</h3>
+            <div class="stat-number" id="borrowed-books">0</div>
+            <p>Currently on loan</p>
+        </div>
+        
+        <div class="stat-card">
+            <h3>👥 Total Users</h3>
+            <div class="stat-number" id="total-users">0</div>
+            <p>Registered members</p>
+        </div>
+        
+        <div class="stat-card">
+            <h3>⏰ Active Loans</h3>
+            <div class="stat-number" id="active-loans">0</div>
+            <p>Books currently borrowed</p>
+        </div>
+        
+        <div class="stat-card">
+            <h3>📅 Reservations</h3>
+            <div class="stat-number" id="total-reservations">0</div>
+            <p>Books on hold</p>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <!-- Available Books -->
+        <div class="dashboard-section">
+            <h3>📚 Available Books (50 Latest)</h3>
+            <div id="available-books-list" class="mini-cards-container">
+                <!-- Available books will load here -->
+            </div>
+        </div>
+
+        <!-- Recent Reservations -->
+        <div class="dashboard-section">
+            <h3>📅 Recent Reservations</h3>
+            <div id="reservations-list" class="mini-cards-container">
+                <!-- Reservations will load here -->
+            </div>
+        </div>
+
+        <!-- Recent Users -->
+        <div class="dashboard-section">
+            <h3>👥 Recent Users</h3>
+            <div id="recent-users-list" class="mini-cards-container">
+                <!-- Recent users will load here -->
+            </div>
+        </div>
+    </div>
+</section>
+
         <!-- Login Modal -->
 <div id="loginModal" class="modal">
     <div class="modal-content">
