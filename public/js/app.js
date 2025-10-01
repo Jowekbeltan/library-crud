@@ -555,43 +555,83 @@ document.addEventListener('DOMContentLoaded', function() {
         loadDashboard();
     }
 });
-// Dashboard Functions - REPLACE THIS SECTION
+// Dashboard Functions - DEBUG VERSION
 async function loadDashboard() {
     if (!authToken) {
-        console.log('No auth token - skipping dashboard load');
+        console.log('No auth token - user not logged in');
+        showLogin();
         return;
     }
     
-    console.log('Loading dashboard data...');
+    console.log('Loading dashboard with token:', authToken.substring(0, 20) + '...');
     
     try {
-        // Load all data
-        const booksResponse = await fetch('/books', { headers: getAuthHeaders() });
-        const usersResponse = await fetch('/users', { headers: getAuthHeaders() });
-        const loansResponse = await fetch('/loans', { headers: getAuthHeaders() });
-        const reservationsResponse = await fetch('/reservations', { headers: getAuthHeaders() });
-
-        // Check if responses are OK
-        if (!booksResponse.ok || !usersResponse.ok || !loansResponse.ok || !reservationsResponse.ok) {
-            throw new Error('Failed to fetch dashboard data');
-        }
-
-        const books = await booksResponse.json();
-        const users = await usersResponse.json();
-        const loans = await loansResponse.json();
-        const reservations = await reservationsResponse.json();
-
-        console.log('Dashboard data loaded:', { books, users, loans, reservations });
+        // Test each endpoint individually to see which one fails
+        console.log('Testing /books endpoint...');
+        const booksResponse = await fetch('/books', { 
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        console.log('Books response status:', booksResponse.status);
         
+        if (!booksResponse.ok) {
+            throw new Error(`Books API failed: ${booksResponse.status} ${booksResponse.statusText}`);
+        }
+        
+        const books = await booksResponse.json();
+        console.log('Books loaded:', books.length, 'books');
+        
+        // Test users endpoint
+        console.log('Testing /users endpoint...');
+        const usersResponse = await fetch('/users', { 
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        console.log('Users response status:', usersResponse.status);
+        
+        if (!usersResponse.ok) {
+            throw new Error(`Users API failed: ${usersResponse.status} ${usersResponse.statusText}`);
+        }
+        
+        const users = await usersResponse.json();
+        console.log('Users loaded:', users.length, 'users');
+
+        // Test loans endpoint
+        console.log('Testing /loans endpoint...');
+        const loansResponse = await fetch('/loans', { 
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        const loans = loansResponse.ok ? await loansResponse.json() : [];
+        console.log('Loans loaded:', loans.length, 'loans');
+
+        // Test reservations endpoint  
+        console.log('Testing /reservations endpoint...');
+        const reservationsResponse = await fetch('/reservations', { 
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        const reservations = reservationsResponse.ok ? await reservationsResponse.json() : [];
+        console.log('Reservations loaded:', reservations.length, 'reservations');
+
+        // Update dashboard with the data we successfully loaded
         updateDashboardStats(books, users, loans, reservations);
         displayAvailableBooks(books);
         displayRecentReservations(reservations);
         displayRecentUsers(users);
         
     } catch (error) {
-        console.error('Error loading dashboard:', error);
-        // Show error message to user
-        document.getElementById('available-books-list').innerHTML = '<p class="mini-card">Error loading data</p>';
+        console.error('Dashboard loading error:', error);
+        document.getElementById('available-books-list').innerHTML = 
+            `<p class="mini-card" style="color: red;">Error: ${error.message}</p>`;
     }
 }
 // Profile Functions
