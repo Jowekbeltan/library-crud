@@ -734,3 +734,53 @@ function loadSectionData(section) {
             break;
     }
 }
+// Test authentication
+async function testAuth() {
+    if (!authToken) {
+        console.log('No authentication token found');
+        return false;
+    }
+    
+    try {
+        const response = await fetch('/books', {
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        console.log('Auth test - Status:', response.status);
+        console.log('Auth test - OK:', response.ok);
+        
+        if (response.status === 401) {
+            console.log('Token is invalid or expired');
+            logout();
+            return false;
+        }
+        
+        return response.ok;
+    } catch (error) {
+        console.error('Auth test failed:', error);
+        return false;
+    }
+}
+
+// Update the DOMContentLoaded to test auth first
+document.addEventListener('DOMContentLoaded', function() {
+    checkAuthStatus();
+    
+    // Test auth after a short delay
+    setTimeout(() => {
+        if (currentUser) {
+            console.log('Current user:', currentUser);
+            testAuth().then(authWorking => {
+                if (authWorking) {
+                    loadDashboard();
+                } else {
+                    console.log('Authentication not working, showing login');
+                    showLogin();
+                }
+            });
+        }
+    }, 1000);
+});
