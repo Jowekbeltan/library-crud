@@ -1,3 +1,7 @@
+// Authentication state
+let currentUser = null;
+let authToken = null;
+
 // Navigation
 function showSection(sectionName) {
     // Hide all sections
@@ -21,6 +25,9 @@ function showSection(sectionName) {
 // Load data based on section
 function loadSectionData(section) {
     switch(section) {
+        case 'dashboard':
+            loadDashboard();
+            break;
         case 'books':
             loadBooks();
             break;
@@ -33,204 +40,11 @@ function loadSectionData(section) {
         case 'reservations':
             loadReservations();
             break;
+        case 'profile':
+            loadProfile();
+            break;
     }
 }
-
-// Books Management
-async function loadBooks() {
-    try {
-        const response = await fetch('/books');
-        const books = await response.json();
-        
-        const booksList = document.getElementById('books-list');
-        const booksCount = document.getElementById('books-count');
-        
-        booksCount.textContent = books.length;
-        booksList.innerHTML = '';
-        
-        books.forEach(book => {
-            booksList.innerHTML += `
-                <div class="card">
-                    <h4>${book.title}</h4>
-                    <p><strong>Author:</strong> ${book.author}</p>
-                    <p><strong>ISBN:</strong> ${book.isbn || 'N/A'}</p>
-                    <p><strong>Status:</strong> 
-                        <span class="status-${book.status}">${book.status}</span>
-                    </p>
-                    <p><strong>Added:</strong> ${new Date(book.created_at).toLocaleDateString()}</p>
-                    <div class="card-actions">
-                        <button class="delete" onclick="deleteBook(${book.id})">Delete</button>
-                    </div>
-                </div>
-            `;
-        });
-    } catch (error) {
-        console.error('Error loading books:', error);
-    }
-}
-
-// Add Book Form Handler
-document.getElementById('add-book-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const title = document.getElementById('title').value;
-    const author = document.getElementById('author').value;
-    const isbn = document.getElementById('isbn').value;
-    
-    try {
-        const response = await fetch('/books', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                title: title,
-                author: author,
-                isbn: isbn
-            })
-        });
-        
-        if (response.ok) {
-            // Clear form
-            document.getElementById('add-book-form').reset();
-            // Reload books
-            loadBooks();
-        } else {
-            alert('Error adding book');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error adding book');
-    }
-});
-
-// Delete Book
-async function deleteBook(bookId) {
-    if (confirm('Are you sure you want to delete this book?')) {
-        try {
-            const response = await fetch(`/books/${bookId}`, {
-                method: 'DELETE'
-            });
-            
-            if (response.ok) {
-                loadBooks(); // Reload the list
-            } else {
-                alert('Error deleting book');
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            alert('Error deleting book');
-        }
-    }
-}
-
-// Users Management
-async function loadUsers() {
-    try {
-        const response = await fetch('/users');
-        const users = await response.json();
-        
-        const usersList = document.getElementById('users-list');
-        usersList.innerHTML = '';
-        
-        users.forEach(user => {
-            usersList.innerHTML += `
-                <div class="card">
-                    <h4>${user.name}</h4>
-                    <p><strong>Email:</strong> ${user.email}</p>
-                    <p><strong>Member since:</strong> ${new Date(user.created_at).toLocaleDateString()}</p>
-                </div>
-            `;
-        });
-    } catch (error) {
-        console.error('Error loading users:', error);
-    }
-}
-
-// Loans Management
-async function loadLoans() {
-    try {
-        const response = await fetch('/loans');
-        const loans = await response.json();
-        
-        const loansList = document.getElementById('loans-list');
-        loansList.innerHTML = '';
-        
-        loans.forEach(loan => {
-            loansList.innerHTML += `
-                <div class="card">
-                    <h4>${loan.book} - ${loan.user}</h4>
-                    <p><strong>Loan Date:</strong> ${new Date(loan.loan_date).toLocaleDateString()}</p>
-                    <p><strong>Due Date:</strong> ${new Date(loan.due_date).toLocaleDateString()}</p>
-                    <p><strong>Status:</strong> ${loan.status}</p>
-                    ${loan.return_date ? 
-                        `<p><strong>Returned:</strong> ${new Date(loan.return_date).toLocaleDateString()}</p>` : 
-                        `<button onclick="returnBook(${loan.id})">Mark Returned</button>`
-                    }
-                </div>
-            `;
-        });
-    } catch (error) {
-        console.error('Error loading loans:', error);
-    }
-}
-
-// Reservations Management
-async function loadReservations() {
-    try {
-        const response = await fetch('/reservations');
-        const reservations = await response.json();
-        
-        const reservationsList = document.getElementById('reservations-list');
-        reservationsList.innerHTML = '';
-        
-        reservations.forEach(reservation => {
-            reservationsList.innerHTML += `
-                <div class="card">
-                    <h4>${reservation.book} - ${reservation.user}</h4>
-                    <p><strong>Reservation Date:</strong> ${new Date(reservation.reservation_date).toLocaleDateString()}</p>
-                    <p><strong>Status:</strong> ${reservation.status}</p>
-                </div>
-            `;
-        });
-    } catch (error) {
-        console.error('Error loading reservations:', error);
-    }
-}
-
-// Return Book Function
-async function returnBook(loanId) {
-    try {
-        const response = await fetch(`/loans/${loanId}/return`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                return_date: new Date().toISOString().split('T')[0]
-            })
-        });
-        
-        if (response.ok) {
-            loadLoans(); // Reload loans
-        }
-    } catch (error) {
-        console.error('Error returning book:', error);
-    }
-}
-
-// Load books when page loads
-document.addEventListener('DOMContentLoaded', function() {
-    loadBooks();
-});
-// Authentication state
-let currentUser = null;
-let authToken = null;
-
-// Check if user is logged in on page load
-document.addEventListener('DOMContentLoaded', function() {
-    checkAuthStatus();
-});
 
 // Authentication functions
 async function login(email, password) {
@@ -252,7 +66,7 @@ async function login(email, password) {
             localStorage.setItem('user', JSON.stringify(currentUser));
             updateUIForAuth();
             closeModals();
-            loadBooks();
+            loadDashboard();
         } else {
             alert(data.error);
         }
@@ -294,7 +108,7 @@ function checkAuthStatus() {
         authToken = savedToken;
         currentUser = JSON.parse(savedUser);
         updateUIForAuth();
-        loadBooks();
+        loadDashboard();
     } else {
         showLogin();
     }
@@ -304,7 +118,6 @@ function updateUIForAuth() {
     if (currentUser) {
         document.getElementById('user-name').textContent = currentUser.name;
         document.getElementById('user-info').style.display = 'block';
-        // Show management sections
         document.querySelector('nav').style.display = 'flex';
     } else {
         document.getElementById('user-info').style.display = 'none';
@@ -336,86 +149,45 @@ function closeModals() {
     document.getElementById('signupModal').style.display = 'none';
 }
 
-// Search functionality
-async function searchBooks(query) {
-    try {
-        const response = await fetch(`/books/search?q=${encodeURIComponent(query)}`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
-        
-        if (response.ok) {
-            const books = await response.json();
-            displaySearchResults(books);
-        }
-    } catch (error) {
-        console.error('Search error:', error);
-    }
-}
-
-// Update your existing API calls to include authentication headers
+// Authentication headers
 function getAuthHeaders() {
+    if (!authToken) {
+        console.warn('No auth token available');
+        return {
+            'Content-Type': 'application/json'
+        };
+    }
     return {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${authToken}`
     };
 }
 
-// Update all your fetch calls to use getAuthHeaders()
-// Example for loadBooks:
-async function loadBooks() {
-    if (!authToken) return;
-    
-    try {
-        const response = await fetch('/books', {
-            headers: getAuthHeaders()
-        });
-        // ... rest of your existing loadBooks code
-    } catch (error) {
-        console.error('Error loading books:', error);
-    }
-}
-
-// Add event listeners for login/signup forms
-document.getElementById('login-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = document.getElementById('login-email').value;
-    const password = document.getElementById('login-password').value;
-    await login(email, password);
-});
-
-document.getElementById('signup-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const name = document.getElementById('signup-name').value;
-    const email = document.getElementById('signup-email').value;
-    const password = document.getElementById('signup-password').value;
-    await signup(name, email, password);
-});
-
-// Close modals when clicking X
-document.querySelectorAll('.close').forEach(closeBtn => {
-    closeBtn.addEventListener('click', closeModals);
-});
-
-// Close modals when clicking outside
-window.addEventListener('click', (e) => {
-    if (e.target.classList.contains('modal')) {
-        closeModals();
-    }
-});
-// Dashboard Functions
+// Dashboard Functions - SINGLE VERSION
 async function loadDashboard() {
-    if (!authToken) return;
+    if (!authToken) {
+        console.log('No auth token - user not logged in');
+        showLogin();
+        return;
+    }
+    
+    console.log('Loading dashboard...');
     
     try {
-        // Load all data in parallel for better performance
+        // Load all data
         const [books, users, loans, reservations] = await Promise.all([
             fetch('/books', { headers: getAuthHeaders() }).then(r => r.json()),
             fetch('/users', { headers: getAuthHeaders() }).then(r => r.json()),
             fetch('/loans', { headers: getAuthHeaders() }).then(r => r.json()),
             fetch('/reservations', { headers: getAuthHeaders() }).then(r => r.json())
         ]);
+        
+        console.log('Dashboard data loaded:', { 
+            books: books.length, 
+            users: users.length, 
+            loans: loans.length, 
+            reservations: reservations.length 
+        });
         
         updateDashboardStats(books, users, loans, reservations);
         displayAvailableBooks(books);
@@ -424,11 +196,12 @@ async function loadDashboard() {
         
     } catch (error) {
         console.error('Error loading dashboard:', error);
+        document.getElementById('available-books-list').innerHTML = 
+            `<p class="mini-card" style="color: red;">Error: ${error.message}</p>`;
     }
 }
 
 function updateDashboardStats(books, users, loans, reservations) {
-    // Calculate statistics
     const totalBooks = books.length;
     const availableBooks = books.filter(book => book.status === 'available').length;
     const borrowedBooks = books.filter(book => book.status === 'borrowed').length;
@@ -436,7 +209,6 @@ function updateDashboardStats(books, users, loans, reservations) {
     const activeLoans = loans.filter(loan => loan.status === 'active').length;
     const totalReservations = reservations.length;
     
-    // Update stat cards
     document.getElementById('total-books').textContent = totalBooks;
     document.getElementById('available-books').textContent = availableBooks;
     document.getElementById('borrowed-books').textContent = borrowedBooks;
@@ -449,7 +221,7 @@ function displayAvailableBooks(books) {
     const container = document.getElementById('available-books-list');
     const availableBooks = books
         .filter(book => book.status === 'available')
-        .slice(0, 50); // Show latest 50 available books
+        .slice(0, 50);
     
     if (availableBooks.length === 0) {
         container.innerHTML = '<p class="mini-card">No available books</p>';
@@ -468,8 +240,7 @@ function displayAvailableBooks(books) {
 
 function displayRecentReservations(reservations) {
     const container = document.getElementById('reservations-list');
-    const recentReservations = reservations
-        .slice(0, 10) // Show latest 10 reservations
+    const recentReservations = reservations.slice(0, 10);
     
     if (recentReservations.length === 0) {
         container.innerHTML = '<p class="mini-card">No reservations</p>';
@@ -490,7 +261,7 @@ function displayRecentUsers(users) {
     const container = document.getElementById('recent-users-list');
     const recentUsers = users
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-        .slice(0, 10); // Show latest 10 users
+        .slice(0, 10);
     
     if (recentUsers.length === 0) {
         container.innerHTML = '<p class="mini-card">No users</p>';
@@ -506,151 +277,227 @@ function displayRecentUsers(users) {
     `).join('');
 }
 
-// Update the showSection function to handle dashboard
-function showSection(sectionName) {
-    // Hide all sections
-    document.querySelectorAll('.section').forEach(section => {
-        section.classList.remove('active');
-    });
-    
-    // Remove active class from all buttons
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    
-    // Show selected section and activate button
-    document.getElementById(sectionName + '-section').classList.add('active');
-    event.target.classList.add('active');
-    
-    // Load data for the section
-    loadSectionData(sectionName);
-}
-
-// Update loadSectionData to include dashboard
-function loadSectionData(section) {
-    switch(section) {
-        case 'dashboard':
-            loadDashboard();
-            break;
-        case 'books':
-            loadBooks();
-            break;
-        case 'users':
-            loadUsers();
-            break;
-        case 'loans':
-            loadLoans();
-            break;
-        case 'reservations':
-            loadReservations();
-            break;
-    }
-}
-
-// Update the DOMContentLoaded to start with dashboard
-document.addEventListener('DOMContentLoaded', function() {
-    checkAuthStatus();
-    // Load dashboard by default when authenticated
-    if (currentUser) {
-        loadDashboard();
-    }
-});
-// Dashboard Functions - DEBUG VERSION
-async function loadDashboard() {
+// Books Management - SINGLE VERSION
+async function loadBooks() {
     if (!authToken) {
-        console.log('No auth token - user not logged in');
-        showLogin();
+        console.log('Not authenticated, skipping books load');
         return;
     }
     
-    console.log('Loading dashboard with token:', authToken.substring(0, 20) + '...');
-    
     try {
-        // Test each endpoint individually to see which one fails
-        console.log('Testing /books endpoint...');
-        const booksResponse = await fetch('/books', { 
-            headers: {
-                'Authorization': `Bearer ${authToken}`,
-                'Content-Type': 'application/json'
-            }
+        const response = await fetch('/books', {
+            headers: getAuthHeaders()
         });
-        console.log('Books response status:', booksResponse.status);
         
-        if (!booksResponse.ok) {
-            throw new Error(`Books API failed: ${booksResponse.status} ${booksResponse.statusText}`);
+        if (!response.ok) {
+            throw new Error(`Failed to load books: ${response.status}`);
         }
         
-        const books = await booksResponse.json();
-        console.log('Books loaded:', books.length, 'books');
+        const books = await response.json();
         
-        // Test users endpoint
-        console.log('Testing /users endpoint...');
-        const usersResponse = await fetch('/users', { 
-            headers: {
-                'Authorization': `Bearer ${authToken}`,
-                'Content-Type': 'application/json'
-            }
+        const booksList = document.getElementById('books-list');
+        const booksCount = document.getElementById('books-count');
+        
+        booksCount.textContent = books.length;
+        booksList.innerHTML = '';
+        
+        books.forEach(book => {
+            booksList.innerHTML += `
+                <div class="card">
+                    <h4>${book.title}</h4>
+                    <p><strong>Author:</strong> ${book.author}</p>
+                    <p><strong>ISBN:</strong> ${book.isbn || 'N/A'}</p>
+                    <p><strong>Status:</strong> 
+                        <span class="status-${book.status}">${book.status}</span>
+                    </p>
+                    <p><strong>Added:</strong> ${new Date(book.created_at).toLocaleDateString()}</p>
+                    <div class="card-actions">
+                        <button class="delete" onclick="deleteBook(${book.id})">Delete</button>
+                    </div>
+                </div>
+            `;
         });
-        console.log('Users response status:', usersResponse.status);
-        
-        if (!usersResponse.ok) {
-            throw new Error(`Users API failed: ${usersResponse.status} ${usersResponse.statusText}`);
-        }
-        
-        const users = await usersResponse.json();
-        console.log('Users loaded:', users.length, 'users');
-
-        // Test loans endpoint
-        console.log('Testing /loans endpoint...');
-        const loansResponse = await fetch('/loans', { 
-            headers: {
-                'Authorization': `Bearer ${authToken}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        const loans = loansResponse.ok ? await loansResponse.json() : [];
-        console.log('Loans loaded:', loans.length, 'loans');
-
-        // Test reservations endpoint  
-        console.log('Testing /reservations endpoint...');
-        const reservationsResponse = await fetch('/reservations', { 
-            headers: {
-                'Authorization': `Bearer ${authToken}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        const reservations = reservationsResponse.ok ? await reservationsResponse.json() : [];
-        console.log('Reservations loaded:', reservations.length, 'reservations');
-
-        // Update dashboard with the data we successfully loaded
-        updateDashboardStats(books, users, loans, reservations);
-        displayAvailableBooks(books);
-        displayRecentReservations(reservations);
-        displayRecentUsers(users);
-        
     } catch (error) {
-        console.error('Dashboard loading error:', error);
-        document.getElementById('available-books-list').innerHTML = 
-            `<p class="mini-card" style="color: red;">Error: ${error.message}</p>`;
+        console.error('Error loading books:', error);
     }
 }
+
+// Add Book Form Handler - FIXED VERSION
+document.getElementById('add-book-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const title = document.getElementById('title').value.trim();
+    const author = document.getElementById('author').value.trim();
+    const isbn = document.getElementById('isbn').value.trim();
+    
+    if (!title || !author) {
+        alert('Please enter both title and author');
+        return;
+    }
+    
+    console.log('Adding book:', { title, author, isbn });
+    
+    try {
+        const response = await fetch('/books', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
+                title: title,
+                author: author,
+                isbn: isbn || null
+            })
+        });
+        
+        const result = await response.json();
+        console.log('Server response:', result);
+        
+        if (response.ok) {
+            document.getElementById('add-book-form').reset();
+            alert('Book added successfully!');
+            loadBooks(); // Reload the books list
+        } else {
+            alert('Error adding book: ' + (result.error || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Network error:', error);
+        alert('Network error: Could not connect to server');
+    }
+});
+
+// Delete Book
+async function deleteBook(bookId) {
+    if (confirm('Are you sure you want to delete this book?')) {
+        try {
+            const response = await fetch(`/books/${bookId}`, {
+                method: 'DELETE',
+                headers: getAuthHeaders()
+            });
+            
+            if (response.ok) {
+                loadBooks();
+            } else {
+                alert('Error deleting book');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error deleting book');
+        }
+    }
+}
+
+// Users Management
+async function loadUsers() {
+    try {
+        const response = await fetch('/users', {
+            headers: getAuthHeaders()
+        });
+        const users = await response.json();
+        
+        const usersList = document.getElementById('users-list');
+        usersList.innerHTML = '';
+        
+        users.forEach(user => {
+            usersList.innerHTML += `
+                <div class="card">
+                    <h4>${user.name}</h4>
+                    <p><strong>Email:</strong> ${user.email}</p>
+                    <p><strong>Member since:</strong> ${new Date(user.created_at).toLocaleDateString()}</p>
+                </div>
+            `;
+        });
+    } catch (error) {
+        console.error('Error loading users:', error);
+    }
+}
+
+// Loans Management
+async function loadLoans() {
+    try {
+        const response = await fetch('/loans', {
+            headers: getAuthHeaders()
+        });
+        const loans = await response.json();
+        
+        const loansList = document.getElementById('loans-list');
+        loansList.innerHTML = '';
+        
+        loans.forEach(loan => {
+            loansList.innerHTML += `
+                <div class="card">
+                    <h4>${loan.book} - ${loan.user}</h4>
+                    <p><strong>Loan Date:</strong> ${new Date(loan.loan_date).toLocaleDateString()}</p>
+                    <p><strong>Due Date:</strong> ${new Date(loan.due_date).toLocaleDateString()}</p>
+                    <p><strong>Status:</strong> ${loan.status}</p>
+                    ${loan.return_date ? 
+                        `<p><strong>Returned:</strong> ${new Date(loan.return_date).toLocaleDateString()}</p>` : 
+                        `<button onclick="returnBook(${loan.id})">Mark Returned</button>`
+                    }
+                </div>
+            `;
+        });
+    } catch (error) {
+        console.error('Error loading loans:', error);
+    }
+}
+
+// Reservations Management
+async function loadReservations() {
+    try {
+        const response = await fetch('/reservations', {
+            headers: getAuthHeaders()
+        });
+        const reservations = await response.json();
+        
+        const reservationsList = document.getElementById('reservations-list');
+        reservationsList.innerHTML = '';
+        
+        reservations.forEach(reservation => {
+            reservationsList.innerHTML += `
+                <div class="card">
+                    <h4>${reservation.book} - ${reservation.user}</h4>
+                    <p><strong>Reservation Date:</strong> ${new Date(reservation.reservation_date).toLocaleDateString()}</p>
+                    <p><strong>Status:</strong> ${reservation.status}</p>
+                </div>
+            `;
+        });
+    } catch (error) {
+        console.error('Error loading reservations:', error);
+    }
+}
+
+// Return Book Function
+async function returnBook(loanId) {
+    try {
+        const response = await fetch(`/loans/${loanId}/return`, {
+            method: 'PUT',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
+                return_date: new Date().toISOString().split('T')[0]
+            })
+        });
+        
+        if (response.ok) {
+            loadLoans();
+        }
+    } catch (error) {
+        console.error('Error returning book:', error);
+    }
+}
+
 // Profile Functions
 async function loadProfile() {
     if (!currentUser) return;
     
     try {
-        // Update basic profile info
         document.getElementById('profile-name').textContent = currentUser.name;
         document.getElementById('profile-email').textContent = currentUser.email;
-        document.getElementById('member-since').textContent = 'Recently'; // You can enhance this with actual user data
+        document.getElementById('member-since').textContent = 'Recently';
         
-        // Load user-specific data
         const [loans, reservations] = await Promise.all([
             fetch('/loans', { headers: getAuthHeaders() }).then(r => r.json()),
             fetch('/reservations', { headers: getAuthHeaders() }).then(r => r.json())
         ]);
         
-        // Calculate user stats
         const userLoans = loans.filter(loan => loan.user === currentUser.name);
         const userReservations = reservations.filter(res => res.user === currentUser.name);
         const activeReservations = userReservations.filter(res => res.status === 'active');
@@ -658,7 +505,6 @@ async function loadProfile() {
         document.getElementById('books-borrowed').textContent = userLoans.length;
         document.getElementById('active-reservations').textContent = activeReservations.length;
         
-        // Display recent activity
         displayUserActivity(userLoans, userReservations);
         
     } catch (error) {
@@ -669,7 +515,6 @@ async function loadProfile() {
 function displayUserActivity(loans, reservations) {
     const activityContainer = document.getElementById('user-activity');
     
-    // Combine and sort activities by date
     const activities = [
         ...loans.map(loan => ({
             type: 'loan',
@@ -684,7 +529,7 @@ function displayUserActivity(loans, reservations) {
             recent: isRecent(res.reservation_date)
         }))
     ].sort((a, b) => new Date(b.date) - new Date(a.date))
-     .slice(0, 10); // Show latest 10 activities
+     .slice(0, 10);
     
     if (activities.length === 0) {
         activityContainer.innerHTML = '<p>No recent activity</p>';
@@ -708,127 +553,52 @@ function isRecent(dateString) {
 
 function changePassword() {
     alert('Password change feature coming soon!');
-    // You can implement a password change modal here
 }
 
-// Update loadSectionData to include profile
-function loadSectionData(section) {
-    switch(section) {
-        case 'dashboard':
-            loadDashboard();
-            break;
-        case 'books':
-            loadBooks();
-            break;
-        case 'users':
-            loadUsers();
-            break;
-        case 'loans':
-            loadLoans();
-            break;
-        case 'reservations':
-            loadReservations();
-            break;
-        case 'profile':
-            loadProfile();
-            break;
-    }
-}
-// Test authentication
-async function testAuth() {
-    if (!authToken) {
-        console.log('No authentication token found');
-        return false;
-    }
-    
+// Search functionality
+async function searchBooks(query) {
     try {
-        const response = await fetch('/books', {
-            headers: {
-                'Authorization': `Bearer ${authToken}`,
-                'Content-Type': 'application/json'
-            }
+        const response = await fetch(`/books/search?q=${encodeURIComponent(query)}`, {
+            headers: getAuthHeaders()
         });
-        
-        console.log('Auth test - Status:', response.status);
-        console.log('Auth test - OK:', response.ok);
-        
-        if (response.status === 401) {
-            console.log('Token is invalid or expired');
-            logout();
-            return false;
-        }
-        
-        return response.ok;
-    } catch (error) {
-        console.error('Auth test failed:', error);
-        return false;
-    }
-}
-
-// Update the DOMContentLoaded to test auth first
-document.addEventListener('DOMContentLoaded', function() {
-    checkAuthStatus();
-    
-    // Test auth after a short delay
-    setTimeout(() => {
-        if (currentUser) {
-            console.log('Current user:', currentUser);
-            testAuth().then(authWorking => {
-                if (authWorking) {
-                    loadDashboard();
-                } else {
-                    console.log('Authentication not working, showing login');
-                    showLogin();
-                }
-            });
-        }
-    }, 1000);
-});
-// Add Book Form Handler - UPDATED VERSION
-document.getElementById('add-book-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const title = document.getElementById('title').value.trim();
-    const author = document.getElementById('author').value.trim();
-    const isbn = document.getElementById('isbn').value.trim();
-    
-    // Basic validation
-    if (!title || !author) {
-        alert('Please enter both title and author');
-        return;
-    }
-    
-    console.log('Adding book:', { title, author, isbn }); // Debug log
-    
-    try {
-        const response = await fetch('/books', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                title: title,
-                author: author,
-                isbn: isbn || null
-            })
-        });
-        
-        const result = await response.json();
         
         if (response.ok) {
-            console.log('Book added successfully:', result);
-            // Clear form
-            document.getElementById('add-book-form').reset();
-            // Show success message
-            alert('Book added successfully!');
-            // Reload books
-            loadBooks();
-        } else {
-            console.error('Server error:', result);
-            alert('Error adding book: ' + (result.error || 'Unknown error'));
+            const books = await response.json();
+            // You'll need to implement displaySearchResults function
+            console.log('Search results:', books);
         }
     } catch (error) {
-        console.error('Network error:', error);
-        alert('Network error: Could not connect to server');
+        console.error('Search error:', error);
     }
+}
+
+// Event listeners
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    await login(email, password);
+});
+
+document.getElementById('signup-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('signup-name').value;
+    const email = document.getElementById('signup-email').value;
+    const password = document.getElementById('signup-password').value;
+    await signup(name, email, password);
+});
+
+document.querySelectorAll('.close').forEach(closeBtn => {
+    closeBtn.addEventListener('click', closeModals);
+});
+
+window.addEventListener('click', (e) => {
+    if (e.target.classList.contains('modal')) {
+        closeModals();
+    }
+});
+
+// Initialize app
+document.addEventListener('DOMContentLoaded', function() {
+    checkAuthStatus();
 });
