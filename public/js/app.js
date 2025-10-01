@@ -784,3 +784,51 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }, 1000);
 });
+// Add Book Form Handler - UPDATED VERSION
+document.getElementById('add-book-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const title = document.getElementById('title').value.trim();
+    const author = document.getElementById('author').value.trim();
+    const isbn = document.getElementById('isbn').value.trim();
+    
+    // Basic validation
+    if (!title || !author) {
+        alert('Please enter both title and author');
+        return;
+    }
+    
+    console.log('Adding book:', { title, author, isbn }); // Debug log
+    
+    try {
+        const response = await fetch('/books', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                title: title,
+                author: author,
+                isbn: isbn || null
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            console.log('Book added successfully:', result);
+            // Clear form
+            document.getElementById('add-book-form').reset();
+            // Show success message
+            alert('Book added successfully!');
+            // Reload books
+            loadBooks();
+        } else {
+            console.error('Server error:', result);
+            alert('Error adding book: ' + (result.error || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Network error:', error);
+        alert('Network error: Could not connect to server');
+    }
+});
