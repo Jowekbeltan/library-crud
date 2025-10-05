@@ -149,18 +149,19 @@ function closeModals() {
     document.getElementById('signupModal').style.display = 'none';
 }
 
-// Authentication headers
+// No authentication required
 function getAuthHeaders() {
-    if (!authToken) {
-        console.warn('No auth token available');
-        return {
-            'Content-Type': 'application/json'
-        };
-    }
     return {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authToken}`
+        'Content-Type': 'application/json'
+        // No Authorization header
     };
+}
+
+// Auto-login without token
+function checkAuthStatus() {
+    currentUser = { name: 'Library Admin', email: 'admin@library.com' };
+    updateUIForAuth();
+    loadDashboard();
 }
 
 // Dashboard Functions - SINGLE VERSION
