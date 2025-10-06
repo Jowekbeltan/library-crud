@@ -54,7 +54,8 @@ async function login(email, password) {
             localStorage.setItem('user', JSON.stringify(currentUser));
             closeModals();
             toggleAppViews();
-            showMessage('Welcome back, ' + currentUser.name + '!', 'success');
+            // Use simple alert for now
+            alert('Welcome back, ' + currentUser.name + '!');
         } else {
             alert(data.error);
         }
@@ -95,7 +96,7 @@ function logout() {
         authToken = null;
         currentUser = null;
         toggleAppViews();
-        showMessage('You have been signed out successfully.', 'info');
+        alert('You have been signed out successfully.');
     }
 }
 
@@ -123,6 +124,20 @@ function updateUIForAuth() {
     } else {
         document.getElementById('user-info').style.display = 'none';
     }
+}
+
+// Authentication headers
+function getAuthHeaders() {
+    if (!authToken) {
+        console.warn('No auth token available');
+        return {
+            'Content-Type': 'application/json'
+        };
+    }
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+    };
 }
 
 // Event listeners for auth forms
