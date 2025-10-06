@@ -12,7 +12,11 @@ const usersRoutes = require('./routes/users');
 const booksRoutes = require('./routes/books');
 const loansRoutes = require('./routes/loans');
 const reservationsRoutes = require('./routes/reservations');
-const preferencesRoutes = require('./routes/preferences'); // Add this line
+const preferencesRoutes = require('./routes/preferences');
+const notificationsRoutes = require('./routes/notifications'); // Add this
+
+// Import and start notification service
+const notificationService = require('./services/notificationService');
 
 // ALL ROUTES PUBLIC - NO AUTHENTICATION
 app.use('/auth', authRoutes);
@@ -20,7 +24,8 @@ app.use('/users', usersRoutes);
 app.use('/books', booksRoutes);
 app.use('/loans', loansRoutes);
 app.use('/reservations', reservationsRoutes);
-app.use('/preferences', preferencesRoutes); // Add this line
+app.use('/preferences', preferencesRoutes);
+app.use('/notifications', notificationsRoutes); // Add this
 
 // Public homepage
 app.get('/', (req, res) => {
@@ -28,4 +33,9 @@ app.get('/', (req, res) => {
 });
 
 const PORT = 3000;
-app.listen(PORT, () => console.log(`Server running on http://localhost:3000`));
+app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+    
+    // Start notification service
+    notificationService.start();
+});
