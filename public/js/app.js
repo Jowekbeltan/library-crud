@@ -828,3 +828,57 @@ function updateUIForAuth() {
         document.querySelector('nav').style.display = 'none';
     }
 }
+// Profile Section Functionality
+function handleProfilePictureUpload(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('profile-picture').src = e.target.result;
+            // Save to localStorage or send to server
+            localStorage.setItem('profilePicture', e.target.result);
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+function removeProfilePicture() {
+    const defaultAvatar = '/images/default-avatar.png';
+    document.getElementById('profile-picture').src = defaultAvatar;
+    localStorage.removeItem('profilePicture');
+    // Reset file input
+    document.getElementById('profile-picture-input').value = '';
+}
+
+// Initialize profile form
+document.addEventListener('DOMContentLoaded', function() {
+    // Load profile picture from localStorage
+    const savedPicture = localStorage.getItem('profilePicture');
+    if (savedPicture) {
+        document.getElementById('profile-picture').src = savedPicture;
+    }
+    
+    // Handle profile picture upload
+    document.getElementById('profile-picture-input').addEventListener('change', handleProfilePictureUpload);
+    
+    // Handle profile form submission
+    document.getElementById('edit-profile-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        saveProfileChanges();
+    });
+});
+
+function saveProfileChanges() {
+    const name = document.getElementById('edit-name').value;
+    const username = document.getElementById('edit-username').value;
+    
+    // Update profile display
+    document.getElementById('profile-name').textContent = name;
+    document.getElementById('profile-username').textContent = '@' + username;
+    
+    // Show success message
+    alert('Profile updated successfully!');
+    
+    // In a real app, you would send this to your backend
+    console.log('Profile saved:', { name, username });
+}
