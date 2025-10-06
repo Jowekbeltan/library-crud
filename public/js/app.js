@@ -2,8 +2,8 @@
 let currentUser = null;
 let authToken = null;
 
-// Navigation - UPDATED VERSION
-function showSection(sectionName) {
+// Navigation - FIXED VERSION
+function showSection(sectionName, event = null) {
     // Hide all sections
     document.querySelectorAll('.section').forEach(section => {
         section.classList.remove('active');
@@ -14,17 +14,25 @@ function showSection(sectionName) {
         btn.classList.remove('active');
     });
     
-    // Show selected section and activate button
+    // Show selected section
     const sectionId = sectionName.includes('-section') ? sectionName : sectionName + '-section';
-    document.getElementById(sectionId).classList.add('active');
+    const targetSection = document.getElementById(sectionId);
+    if (targetSection) {
+        targetSection.classList.add('active');
+    }
     
-    // Find and activate the correct nav button
-    const navButtons = document.querySelectorAll('.nav-btn');
-    navButtons.forEach(btn => {
-        if (btn.textContent.includes(getButtonText(sectionName))) {
-            btn.classList.add('active');
-        }
-    });
+    // Activate the clicked button if event is provided
+    if (event && event.target) {
+        event.target.classList.add('active');
+    } else {
+        // Fallback: find button by section name
+        const navButtons = document.querySelectorAll('.nav-btn');
+        navButtons.forEach(btn => {
+            if (btn.textContent.includes(getButtonText(sectionName.replace('-section', '')))) {
+                btn.classList.add('active');
+            }
+        });
+    }
     
     // Load data for the section
     loadSectionData(sectionName.replace('-section', ''));
@@ -121,7 +129,7 @@ async function signup(name, email, password) {
     }
 }
 
-// Auto-login without token - UPDATED VERSION
+// Auto-login without token
 function checkAuthStatus() {
     const savedToken = localStorage.getItem('authToken');
     const savedUser = localStorage.getItem('user');
@@ -140,12 +148,13 @@ function checkAuthStatus() {
             id: 1 
         };
         updateUIForAuth();
-        loadDashboard();
         
         // Pre-fill profile form with user data
-        document.getElementById('edit-name').value = currentUser.name;
-        document.getElementById('edit-username').value = currentUser.username;
-        document.getElementById('edit-email').value = currentUser.email;
+        setTimeout(() => {
+            document.getElementById('edit-name').value = currentUser.name;
+            document.getElementById('edit-username').value = currentUser.username;
+            document.getElementById('edit-email').value = currentUser.email;
+        }, 100);
     }
 }
 
@@ -188,47 +197,15 @@ function closeModals() {
 function getAuthHeaders() {
     return {
         'Content-Type': 'application/json'
-        // No Authorization header
     };
 }
 
 // Dashboard Functions
 async function loadDashboard() {
-    if (!authToken) {
-        console.log('No auth token - using demo data');
-        // Load demo data instead
-        loadDemoDashboard();
-        return;
-    }
-    
     console.log('Loading dashboard...');
     
-    try {
-        // Load all data
-        const [books, users, loans, reservations] = await Promise.all([
-            fetch('/books', { headers: getAuthHeaders() }).then(r => r.json()),
-            fetch('/users', { headers: getAuthHeaders() }).then(r => r.json()),
-            fetch('/loans', { headers: getAuthHeaders() }).then(r => r.json()),
-            fetch('/reservations', { headers: getAuthHeaders() }).then(r => r.json())
-        ]);
-        
-        console.log('Dashboard data loaded:', { 
-            books: books.length, 
-            users: users.length, 
-            loans: loans.length, 
-            reservations: reservations.length 
-        });
-        
-        updateDashboardStats(books, users, loans, reservations);
-        displayAvailableBooks(books);
-        displayRecentReservations(reservations);
-        displayRecentUsers(users);
-        
-    } catch (error) {
-        console.error('Error loading dashboard:', error);
-        // Fallback to demo data
-        loadDemoDashboard();
-    }
+    // Use demo data (no backend calls to avoid freezing)
+    loadDemoDashboard();
 }
 
 // Demo dashboard data
@@ -341,28 +318,8 @@ function displayRecentUsers(users) {
 
 // Books Management
 async function loadBooks() {
-    if (!authToken) {
-        console.log('Not authenticated, loading demo books');
-        loadDemoBooks();
-        return;
-    }
-    
-    try {
-        const response = await fetch('/books', {
-            headers: getAuthHeaders()
-        });
-        
-        if (!response.ok) {
-            throw new Error(`Failed to load books: ${response.status}`);
-        }
-        
-        const books = await response.json();
-        displayBooks(books);
-        
-    } catch (error) {
-        console.error('Error loading books:', error);
-        loadDemoBooks();
-    }
+    console.log('Loading books...');
+    loadDemoBooks();
 }
 
 function loadDemoBooks() {
@@ -370,8 +327,7 @@ function loadDemoBooks() {
         { id: 1, title: 'The Great Gatsby', author: 'F. Scott Fitzgerald', isbn: '9780743273565', status: 'available', created_at: '2024-01-15' },
         { id: 2, title: 'To Kill a Mockingbird', author: 'Harper Lee', isbn: '9780061120084', status: 'available', created_at: '2024-01-20' },
         { id: 3, title: '1984', author: 'George Orwell', isbn: '9780451524935', status: 'borrowed', created_at: '2024-02-01' },
-        { id: 4, title: 'Pride and Prejudice', author: 'Jane Austen', isbn: '9780141439518', status: 'available', created_at: '2024-02-15' },
-        { id: 5, title: 'The Catcher in the Rye', author: 'J.D. Salinger', isbn: '9780316769174', status: 'available', created_at: '2024-03-01' }
+        { id: 4, title: 'Pride and Prejudice', author: 'Jane Austen', isbn: '9780141439518', status: 'available', created_at: '2024-02-15' }
     ];
     
     displayBooks(demoBooks);
@@ -381,25 +337,27 @@ function displayBooks(books) {
     const booksList = document.getElementById('books-list');
     const booksCount = document.getElementById('books-count');
     
-    booksCount.textContent = books.length;
-    booksList.innerHTML = '';
-    
-    books.forEach(book => {
-        booksList.innerHTML += `
-            <div class="card">
-                <h4>${book.title}</h4>
-                <p><strong>Author:</strong> ${book.author}</p>
-                <p><strong>ISBN:</strong> ${book.isbn || 'N/A'}</p>
-                <p><strong>Status:</strong> 
-                    <span class="status-${book.status}">${book.status}</span>
-                </p>
-                <p><strong>Added:</strong> ${new Date(book.created_at).toLocaleDateString()}</p>
-                <div class="card-actions">
-                    <button class="delete" onclick="deleteBook(${book.id})">Delete</button>
+    if (booksList && booksCount) {
+        booksCount.textContent = books.length;
+        booksList.innerHTML = '';
+        
+        books.forEach(book => {
+            booksList.innerHTML += `
+                <div class="card">
+                    <h4>${book.title}</h4>
+                    <p><strong>Author:</strong> ${book.author}</p>
+                    <p><strong>ISBN:</strong> ${book.isbn || 'N/A'}</p>
+                    <p><strong>Status:</strong> 
+                        <span class="status-${book.status}">${book.status}</span>
+                    </p>
+                    <p><strong>Added:</strong> ${new Date(book.created_at).toLocaleDateString()}</p>
+                    <div class="card-actions">
+                        <button class="delete" onclick="deleteBook(${book.id})">Delete</button>
+                    </div>
                 </div>
-            </div>
-        `;
-    });
+            `;
+        });
+    }
 }
 
 // Add Book Form Handler
@@ -417,95 +375,32 @@ document.getElementById('add-book-form').addEventListener('submit', async (e) =>
     
     console.log('Adding book:', { title, author, isbn });
     
-    if (!authToken) {
-        // Demo mode - just reload books to show the form was submitted
-        alert('Book added successfully! (Demo mode)');
-        document.getElementById('add-book-form').reset();
-        loadBooks();
-        return;
-    }
-    
-    try {
-        const response = await fetch('/books', {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({
-                title: title,
-                author: author,
-                isbn: isbn || null
-            })
-        });
-        
-        const result = await response.json();
-        console.log('Server response:', result);
-        
-        if (response.ok) {
-            document.getElementById('add-book-form').reset();
-            alert('Book added successfully!');
-            loadBooks();
-        } else {
-            alert('Error adding book: ' + (result.error || 'Unknown error'));
-        }
-    } catch (error) {
-        console.error('Network error:', error);
-        alert('Network error: Could not connect to server');
-    }
+    // Demo mode - just reload books to show the form was submitted
+    alert('Book added successfully! (Demo mode)');
+    document.getElementById('add-book-form').reset();
+    loadBooks();
 });
 
 // Delete Book
 async function deleteBook(bookId) {
     if (confirm('Are you sure you want to delete this book?')) {
-        if (!authToken) {
-            // Demo mode
-            alert('Book deleted successfully! (Demo mode)');
-            loadBooks();
-            return;
-        }
-        
-        try {
-            const response = await fetch(`/books/${bookId}`, {
-                method: 'DELETE',
-                headers: getAuthHeaders()
-            });
-            
-            if (response.ok) {
-                loadBooks();
-            } else {
-                alert('Error deleting book');
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            alert('Error deleting book');
-        }
+        // Demo mode
+        alert('Book deleted successfully! (Demo mode)');
+        loadBooks();
     }
 }
 
 // Users Management
 async function loadUsers() {
-    try {
-        if (!authToken) {
-            loadDemoUsers();
-            return;
-        }
-        
-        const response = await fetch('/users', {
-            headers: getAuthHeaders()
-        });
-        const users = await response.json();
-        displayUsers(users);
-        
-    } catch (error) {
-        console.error('Error loading users:', error);
-        loadDemoUsers();
-    }
+    console.log('Loading users...');
+    loadDemoUsers();
 }
 
 function loadDemoUsers() {
     const demoUsers = [
         { id: 1, name: 'John Smith', email: 'john@email.com', created_at: '2024-01-15' },
         { id: 2, name: 'Sarah Johnson', email: 'sarah@email.com', created_at: '2024-02-20' },
-        { id: 3, name: 'Mike Brown', email: 'mike@email.com', created_at: '2024-03-10' },
-        { id: 4, name: 'Emily Davis', email: 'emily@email.com', created_at: '2024-03-12' }
+        { id: 3, name: 'Mike Brown', email: 'mike@email.com', created_at: '2024-03-10' }
     ];
     
     displayUsers(demoUsers);
@@ -513,43 +408,30 @@ function loadDemoUsers() {
 
 function displayUsers(users) {
     const usersList = document.getElementById('users-list');
-    usersList.innerHTML = '';
-    
-    users.forEach(user => {
-        usersList.innerHTML += `
-            <div class="card">
-                <h4>${user.name}</h4>
-                <p><strong>Email:</strong> ${user.email}</p>
-                <p><strong>Member since:</strong> ${new Date(user.created_at).toLocaleDateString()}</p>
-            </div>
-        `;
-    });
+    if (usersList) {
+        usersList.innerHTML = '';
+        
+        users.forEach(user => {
+            usersList.innerHTML += `
+                <div class="card">
+                    <h4>${user.name}</h4>
+                    <p><strong>Email:</strong> ${user.email}</p>
+                    <p><strong>Member since:</strong> ${new Date(user.created_at).toLocaleDateString()}</p>
+                </div>
+            `;
+        });
+    }
 }
 
 // Loans Management
 async function loadLoans() {
-    try {
-        if (!authToken) {
-            loadDemoLoans();
-            return;
-        }
-        
-        const response = await fetch('/loans', {
-            headers: getAuthHeaders()
-        });
-        const loans = await response.json();
-        displayLoans(loans);
-        
-    } catch (error) {
-        console.error('Error loading loans:', error);
-        loadDemoLoans();
-    }
+    console.log('Loading loans...');
+    loadDemoLoans();
 }
 
 function loadDemoLoans() {
     const demoLoans = [
-        { id: 1, book: '1984', user: 'John Smith', loan_date: '2024-03-01', due_date: '2024-03-15', status: 'active' },
-        { id: 2, book: 'The Great Gatsby', user: 'Sarah Johnson', loan_date: '2024-02-20', due_date: '2024-03-05', status: 'returned', return_date: '2024-03-04' }
+        { id: 1, book: '1984', user: 'John Smith', loan_date: '2024-03-01', due_date: '2024-03-15', status: 'active' }
     ];
     
     displayLoans(demoLoans);
@@ -557,48 +439,35 @@ function loadDemoLoans() {
 
 function displayLoans(loans) {
     const loansList = document.getElementById('loans-list');
-    loansList.innerHTML = '';
-    
-    loans.forEach(loan => {
-        loansList.innerHTML += `
-            <div class="card">
-                <h4>${loan.book} - ${loan.user}</h4>
-                <p><strong>Loan Date:</strong> ${new Date(loan.loan_date).toLocaleDateString()}</p>
-                <p><strong>Due Date:</strong> ${new Date(loan.due_date).toLocaleDateString()}</p>
-                <p><strong>Status:</strong> ${loan.status}</p>
-                ${loan.return_date ? 
-                    `<p><strong>Returned:</strong> ${new Date(loan.return_date).toLocaleDateString()}</p>` : 
-                    `<button onclick="returnBook(${loan.id})">Mark Returned</button>`
-                }
-            </div>
-        `;
-    });
+    if (loansList) {
+        loansList.innerHTML = '';
+        
+        loans.forEach(loan => {
+            loansList.innerHTML += `
+                <div class="card">
+                    <h4>${loan.book} - ${loan.user}</h4>
+                    <p><strong>Loan Date:</strong> ${new Date(loan.loan_date).toLocaleDateString()}</p>
+                    <p><strong>Due Date:</strong> ${new Date(loan.due_date).toLocaleDateString()}</p>
+                    <p><strong>Status:</strong> ${loan.status}</p>
+                    ${loan.return_date ? 
+                        `<p><strong>Returned:</strong> ${new Date(loan.return_date).toLocaleDateString()}</p>` : 
+                        `<button onclick="returnBook(${loan.id})">Mark Returned</button>`
+                    }
+                </div>
+            `;
+        });
+    }
 }
 
 // Reservations Management
 async function loadReservations() {
-    try {
-        if (!authToken) {
-            loadDemoReservations();
-            return;
-        }
-        
-        const response = await fetch('/reservations', {
-            headers: getAuthHeaders()
-        });
-        const reservations = await response.json();
-        displayReservations(reservations);
-        
-    } catch (error) {
-        console.error('Error loading reservations:', error);
-        loadDemoReservations();
-    }
+    console.log('Loading reservations...');
+    loadDemoReservations();
 }
 
 function loadDemoReservations() {
     const demoReservations = [
-        { id: 1, book: 'The Catcher in the Rye', user: 'Sarah Johnson', reservation_date: '2024-03-12', status: 'active' },
-        { id: 2, book: 'Pride and Prejudice', user: 'Mike Brown', reservation_date: '2024-03-10', status: 'completed' }
+        { id: 1, book: 'The Catcher in the Rye', user: 'Sarah Johnson', reservation_date: '2024-03-12', status: 'active' }
     ];
     
     displayReservations(demoReservations);
@@ -606,48 +475,33 @@ function loadDemoReservations() {
 
 function displayReservations(reservations) {
     const reservationsList = document.getElementById('reservations-list');
-    reservationsList.innerHTML = '';
-    
-    reservations.forEach(reservation => {
-        reservationsList.innerHTML += `
-            <div class="card">
-                <h4>${reservation.book} - ${reservation.user}</h4>
-                <p><strong>Reservation Date:</strong> ${new Date(reservation.reservation_date).toLocaleDateString()}</p>
-                <p><strong>Status:</strong> ${reservation.status}</p>
-            </div>
-        `;
-    });
+    if (reservationsList) {
+        reservationsList.innerHTML = '';
+        
+        reservations.forEach(reservation => {
+            reservationsList.innerHTML += `
+                <div class="card">
+                    <h4>${reservation.book} - ${reservation.user}</h4>
+                    <p><strong>Reservation Date:</strong> ${new Date(reservation.reservation_date).toLocaleDateString()}</p>
+                    <p><strong>Status:</strong> ${reservation.status}</p>
+                </div>
+            `;
+        });
+    }
 }
 
 // Return Book Function
 async function returnBook(loanId) {
-    if (!authToken) {
-        // Demo mode
-        alert('Book returned successfully! (Demo mode)');
-        loadLoans();
-        return;
-    }
-    
-    try {
-        const response = await fetch(`/loans/${loanId}/return`, {
-            method: 'PUT',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({
-                return_date: new Date().toISOString().split('T')[0]
-            })
-        });
-        
-        if (response.ok) {
-            loadLoans();
-        }
-    } catch (error) {
-        console.error('Error returning book:', error);
-    }
+    // Demo mode
+    alert('Book returned successfully! (Demo mode)');
+    loadLoans();
 }
 
-// Profile Functions - UPDATED VERSION
+// Profile Functions
 async function loadProfile() {
     if (!currentUser) return;
+    
+    console.log('Loading profile...');
     
     try {
         // Update profile display with current user data
@@ -682,22 +536,17 @@ function displayMockActivity() {
     ];
     
     const activityContainer = document.getElementById('user-activity');
-    activityContainer.innerHTML = activities.map(activity => `
-        <div class="activity-item ${activity.recent ? 'recent' : 'old'}">
-            <h4>${activity.title}</h4>
-            <p>${activity.date.toLocaleDateString()} • ${activity.type === 'loan' ? '📖 Loan' : '📅 Reservation'}</p>
-        </div>
-    `).join('');
+    if (activityContainer) {
+        activityContainer.innerHTML = activities.map(activity => `
+            <div class="activity-item ${activity.recent ? 'recent' : 'old'}">
+                <h4>${activity.title}</h4>
+                <p>${activity.date.toLocaleDateString()} • ${activity.type === 'loan' ? '📖 Loan' : '📅 Reservation'}</p>
+            </div>
+        `).join('');
+    }
 }
 
-function isRecent(dateString) {
-    const activityDate = new Date(dateString);
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    return activityDate > sevenDaysAgo;
-}
-
-// Profile Picture Functions - UPDATED VERSION
+// Profile Picture Functions
 function handleProfilePictureUpload(event) {
     const file = event.target.files[0];
     if (file) {
@@ -734,7 +583,7 @@ function removeProfilePicture() {
     }
 }
 
-// Profile Form Handler - UPDATED VERSION
+// Profile Form Handler
 document.getElementById('edit-profile-form').addEventListener('submit', function(e) {
     e.preventDefault();
     
@@ -780,26 +629,9 @@ function handleSearch(event) {
     }
 }
 
-async function searchBooks(query) {
-    try {
-        if (!authToken) {
-            // Demo search
-            alert(`Searching for: ${query} (Demo mode)`);
-            return;
-        }
-        
-        const response = await fetch(`/books/search?q=${encodeURIComponent(query)}`, {
-            headers: getAuthHeaders()
-        });
-        
-        if (response.ok) {
-            const books = await response.json();
-            console.log('Search results:', books);
-            // You can implement displaySearchResults function here
-        }
-    } catch (error) {
-        console.error('Search error:', error);
-    }
+function searchBooks(query) {
+    // Demo search
+    alert(`Searching for: ${query} (Demo mode)`);
 }
 
 function clearSearch() {
@@ -808,33 +640,8 @@ function clearSearch() {
 }
 
 // Event listeners
-document.getElementById('login-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = document.getElementById('login-email').value;
-    const password = document.getElementById('login-password').value;
-    await login(email, password);
-});
-
-document.getElementById('signup-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const name = document.getElementById('signup-name').value;
-    const email = document.getElementById('signup-email').value;
-    const password = document.getElementById('signup-password').value;
-    await signup(name, email, password);
-});
-
-document.querySelectorAll('.close').forEach(closeBtn => {
-    closeBtn.addEventListener('click', closeModals);
-});
-
-window.addEventListener('click', (e) => {
-    if (e.target.classList.contains('modal')) {
-        closeModals();
-    }
-});
-
-// Initialize app - UPDATED VERSION
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize auth
     checkAuthStatus();
     
     // Load profile picture from localStorage
@@ -844,5 +651,44 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Handle profile picture upload
-    document.getElementById('profile-picture-input').addEventListener('change', handleProfilePictureUpload);
+    const profilePictureInput = document.getElementById('profile-picture-input');
+    if (profilePictureInput) {
+        profilePictureInput.addEventListener('change', handleProfilePictureUpload);
+    }
+    
+    // Form event listeners
+    const loginForm = document.getElementById('login-form');
+    const signupForm = document.getElementById('signup-form');
+    
+    if (loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            await login(email, password);
+        });
+    }
+    
+    if (signupForm) {
+        signupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('signup-name').value;
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            await signup(name, email, password);
+        });
+    }
+    
+    // Modal event listeners
+    document.querySelectorAll('.close').forEach(closeBtn => {
+        closeBtn.addEventListener('click', closeModals);
+    });
+    
+    window.addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal')) {
+            closeModals();
+        }
+    });
+    
+    console.log('Library Management System initialized successfully!');
 });
