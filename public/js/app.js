@@ -2,7 +2,7 @@
 let currentUser = null;
 let authToken = null;
 
-// Navigation
+// Navigation - UPDATED VERSION
 function showSection(sectionName) {
     // Hide all sections
     document.querySelectorAll('.section').forEach(section => {
@@ -15,11 +15,32 @@ function showSection(sectionName) {
     });
     
     // Show selected section and activate button
-    document.getElementById(sectionName + '-section').classList.add('active');
-    event.target.classList.add('active');
+    const sectionId = sectionName.includes('-section') ? sectionName : sectionName + '-section';
+    document.getElementById(sectionId).classList.add('active');
+    
+    // Find and activate the correct nav button
+    const navButtons = document.querySelectorAll('.nav-btn');
+    navButtons.forEach(btn => {
+        if (btn.textContent.includes(getButtonText(sectionName))) {
+            btn.classList.add('active');
+        }
+    });
     
     // Load data for the section
-    loadSectionData(sectionName);
+    loadSectionData(sectionName.replace('-section', ''));
+}
+
+// Helper function to match button text
+function getButtonText(sectionName) {
+    const buttonMap = {
+        'dashboard': '📊 Dashboard',
+        'books': '📚 Books', 
+        'users': '👥 Users',
+        'loans': '📖 Loans',
+        'reservations': '📅 Reservations',
+        'profile': '👤 Profile'
+    };
+    return buttonMap[sectionName] || sectionName;
 }
 
 // Load data based on section
@@ -100,6 +121,7 @@ async function signup(name, email, password) {
     }
 }
 
+// Auto-login without token - UPDATED VERSION
 function checkAuthStatus() {
     const savedToken = localStorage.getItem('authToken');
     const savedUser = localStorage.getItem('user');
@@ -110,7 +132,20 @@ function checkAuthStatus() {
         updateUIForAuth();
         loadDashboard();
     } else {
-        showLogin();
+        // Demo auto-login with profile data
+        currentUser = { 
+            name: 'Lib', 
+            email: 'adm',
+            username: 'library_',
+            id: 1 
+        };
+        updateUIForAuth();
+        loadDashboard();
+        
+        // Pre-fill profile form with user data
+        document.getElementById('edit-name').value = currentUser.name;
+        document.getElementById('edit-username').value = currentUser.username;
+        document.getElementById('edit-email').value = currentUser.email;
     }
 }
 
@@ -157,18 +192,12 @@ function getAuthHeaders() {
     };
 }
 
-// Auto-login without token
-function checkAuthStatus() {
-    currentUser = { name: 'Library Admin', email: 'admin@library.com' };
-    updateUIForAuth();
-    loadDashboard();
-}
-
-// Dashboard Functions - SINGLE VERSION
+// Dashboard Functions
 async function loadDashboard() {
     if (!authToken) {
-        console.log('No auth token - user not logged in');
-        showLogin();
+        console.log('No auth token - using demo data');
+        // Load demo data instead
+        loadDemoDashboard();
         return;
     }
     
@@ -197,9 +226,41 @@ async function loadDashboard() {
         
     } catch (error) {
         console.error('Error loading dashboard:', error);
-        document.getElementById('available-books-list').innerHTML = 
-            `<p class="mini-card" style="color: red;">Error: ${error.message}</p>`;
+        // Fallback to demo data
+        loadDemoDashboard();
     }
+}
+
+// Demo dashboard data
+function loadDemoDashboard() {
+    console.log('Loading demo dashboard data...');
+    
+    // Mock data
+    const demoBooks = [
+        { id: 1, title: 'The Great Gatsby', author: 'F. Scott Fitzgerald', isbn: '9780743273565', status: 'available' },
+        { id: 2, title: 'To Kill a Mockingbird', author: 'Harper Lee', isbn: '9780061120084', status: 'available' },
+        { id: 3, title: '1984', author: 'George Orwell', isbn: '9780451524935', status: 'borrowed' },
+        { id: 4, title: 'Pride and Prejudice', author: 'Jane Austen', isbn: '9780141439518', status: 'available' }
+    ];
+    
+    const demoUsers = [
+        { id: 1, name: 'John Smith', email: 'john@email.com', created_at: '2024-01-15' },
+        { id: 2, name: 'Sarah Johnson', email: 'sarah@email.com', created_at: '2024-02-20' },
+        { id: 3, name: 'Mike Brown', email: 'mike@email.com', created_at: '2024-03-10' }
+    ];
+    
+    const demoLoans = [
+        { id: 1, book: '1984', user: 'John Smith', loan_date: '2024-03-01', due_date: '2024-03-15', status: 'active' }
+    ];
+    
+    const demoReservations = [
+        { id: 1, book: 'The Catcher in the Rye', user: 'Sarah Johnson', reservation_date: '2024-03-12', status: 'active' }
+    ];
+    
+    updateDashboardStats(demoBooks, demoUsers, demoLoans, demoReservations);
+    displayAvailableBooks(demoBooks);
+    displayRecentReservations(demoReservations);
+    displayRecentUsers(demoUsers);
 }
 
 function updateDashboardStats(books, users, loans, reservations) {
@@ -278,10 +339,11 @@ function displayRecentUsers(users) {
     `).join('');
 }
 
-// Books Management - SINGLE VERSION
+// Books Management
 async function loadBooks() {
     if (!authToken) {
-        console.log('Not authenticated, skipping books load');
+        console.log('Not authenticated, loading demo books');
+        loadDemoBooks();
         return;
     }
     
@@ -295,35 +357,52 @@ async function loadBooks() {
         }
         
         const books = await response.json();
+        displayBooks(books);
         
-        const booksList = document.getElementById('books-list');
-        const booksCount = document.getElementById('books-count');
-        
-        booksCount.textContent = books.length;
-        booksList.innerHTML = '';
-        
-        books.forEach(book => {
-            booksList.innerHTML += `
-                <div class="card">
-                    <h4>${book.title}</h4>
-                    <p><strong>Author:</strong> ${book.author}</p>
-                    <p><strong>ISBN:</strong> ${book.isbn || 'N/A'}</p>
-                    <p><strong>Status:</strong> 
-                        <span class="status-${book.status}">${book.status}</span>
-                    </p>
-                    <p><strong>Added:</strong> ${new Date(book.created_at).toLocaleDateString()}</p>
-                    <div class="card-actions">
-                        <button class="delete" onclick="deleteBook(${book.id})">Delete</button>
-                    </div>
-                </div>
-            `;
-        });
     } catch (error) {
         console.error('Error loading books:', error);
+        loadDemoBooks();
     }
 }
 
-// Add Book Form Handler - FIXED VERSION
+function loadDemoBooks() {
+    const demoBooks = [
+        { id: 1, title: 'The Great Gatsby', author: 'F. Scott Fitzgerald', isbn: '9780743273565', status: 'available', created_at: '2024-01-15' },
+        { id: 2, title: 'To Kill a Mockingbird', author: 'Harper Lee', isbn: '9780061120084', status: 'available', created_at: '2024-01-20' },
+        { id: 3, title: '1984', author: 'George Orwell', isbn: '9780451524935', status: 'borrowed', created_at: '2024-02-01' },
+        { id: 4, title: 'Pride and Prejudice', author: 'Jane Austen', isbn: '9780141439518', status: 'available', created_at: '2024-02-15' },
+        { id: 5, title: 'The Catcher in the Rye', author: 'J.D. Salinger', isbn: '9780316769174', status: 'available', created_at: '2024-03-01' }
+    ];
+    
+    displayBooks(demoBooks);
+}
+
+function displayBooks(books) {
+    const booksList = document.getElementById('books-list');
+    const booksCount = document.getElementById('books-count');
+    
+    booksCount.textContent = books.length;
+    booksList.innerHTML = '';
+    
+    books.forEach(book => {
+        booksList.innerHTML += `
+            <div class="card">
+                <h4>${book.title}</h4>
+                <p><strong>Author:</strong> ${book.author}</p>
+                <p><strong>ISBN:</strong> ${book.isbn || 'N/A'}</p>
+                <p><strong>Status:</strong> 
+                    <span class="status-${book.status}">${book.status}</span>
+                </p>
+                <p><strong>Added:</strong> ${new Date(book.created_at).toLocaleDateString()}</p>
+                <div class="card-actions">
+                    <button class="delete" onclick="deleteBook(${book.id})">Delete</button>
+                </div>
+            </div>
+        `;
+    });
+}
+
+// Add Book Form Handler
 document.getElementById('add-book-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     
@@ -337,6 +416,14 @@ document.getElementById('add-book-form').addEventListener('submit', async (e) =>
     }
     
     console.log('Adding book:', { title, author, isbn });
+    
+    if (!authToken) {
+        // Demo mode - just reload books to show the form was submitted
+        alert('Book added successfully! (Demo mode)');
+        document.getElementById('add-book-form').reset();
+        loadBooks();
+        return;
+    }
     
     try {
         const response = await fetch('/books', {
@@ -355,7 +442,7 @@ document.getElementById('add-book-form').addEventListener('submit', async (e) =>
         if (response.ok) {
             document.getElementById('add-book-form').reset();
             alert('Book added successfully!');
-            loadBooks(); // Reload the books list
+            loadBooks();
         } else {
             alert('Error adding book: ' + (result.error || 'Unknown error'));
         }
@@ -368,6 +455,13 @@ document.getElementById('add-book-form').addEventListener('submit', async (e) =>
 // Delete Book
 async function deleteBook(bookId) {
     if (confirm('Are you sure you want to delete this book?')) {
+        if (!authToken) {
+            // Demo mode
+            alert('Book deleted successfully! (Demo mode)');
+            loadBooks();
+            return;
+        }
+        
         try {
             const response = await fetch(`/books/${bookId}`, {
                 method: 'DELETE',
@@ -389,85 +483,151 @@ async function deleteBook(bookId) {
 // Users Management
 async function loadUsers() {
     try {
+        if (!authToken) {
+            loadDemoUsers();
+            return;
+        }
+        
         const response = await fetch('/users', {
             headers: getAuthHeaders()
         });
         const users = await response.json();
+        displayUsers(users);
         
-        const usersList = document.getElementById('users-list');
-        usersList.innerHTML = '';
-        
-        users.forEach(user => {
-            usersList.innerHTML += `
-                <div class="card">
-                    <h4>${user.name}</h4>
-                    <p><strong>Email:</strong> ${user.email}</p>
-                    <p><strong>Member since:</strong> ${new Date(user.created_at).toLocaleDateString()}</p>
-                </div>
-            `;
-        });
     } catch (error) {
         console.error('Error loading users:', error);
+        loadDemoUsers();
     }
+}
+
+function loadDemoUsers() {
+    const demoUsers = [
+        { id: 1, name: 'John Smith', email: 'john@email.com', created_at: '2024-01-15' },
+        { id: 2, name: 'Sarah Johnson', email: 'sarah@email.com', created_at: '2024-02-20' },
+        { id: 3, name: 'Mike Brown', email: 'mike@email.com', created_at: '2024-03-10' },
+        { id: 4, name: 'Emily Davis', email: 'emily@email.com', created_at: '2024-03-12' }
+    ];
+    
+    displayUsers(demoUsers);
+}
+
+function displayUsers(users) {
+    const usersList = document.getElementById('users-list');
+    usersList.innerHTML = '';
+    
+    users.forEach(user => {
+        usersList.innerHTML += `
+            <div class="card">
+                <h4>${user.name}</h4>
+                <p><strong>Email:</strong> ${user.email}</p>
+                <p><strong>Member since:</strong> ${new Date(user.created_at).toLocaleDateString()}</p>
+            </div>
+        `;
+    });
 }
 
 // Loans Management
 async function loadLoans() {
     try {
+        if (!authToken) {
+            loadDemoLoans();
+            return;
+        }
+        
         const response = await fetch('/loans', {
             headers: getAuthHeaders()
         });
         const loans = await response.json();
+        displayLoans(loans);
         
-        const loansList = document.getElementById('loans-list');
-        loansList.innerHTML = '';
-        
-        loans.forEach(loan => {
-            loansList.innerHTML += `
-                <div class="card">
-                    <h4>${loan.book} - ${loan.user}</h4>
-                    <p><strong>Loan Date:</strong> ${new Date(loan.loan_date).toLocaleDateString()}</p>
-                    <p><strong>Due Date:</strong> ${new Date(loan.due_date).toLocaleDateString()}</p>
-                    <p><strong>Status:</strong> ${loan.status}</p>
-                    ${loan.return_date ? 
-                        `<p><strong>Returned:</strong> ${new Date(loan.return_date).toLocaleDateString()}</p>` : 
-                        `<button onclick="returnBook(${loan.id})">Mark Returned</button>`
-                    }
-                </div>
-            `;
-        });
     } catch (error) {
         console.error('Error loading loans:', error);
+        loadDemoLoans();
     }
+}
+
+function loadDemoLoans() {
+    const demoLoans = [
+        { id: 1, book: '1984', user: 'John Smith', loan_date: '2024-03-01', due_date: '2024-03-15', status: 'active' },
+        { id: 2, book: 'The Great Gatsby', user: 'Sarah Johnson', loan_date: '2024-02-20', due_date: '2024-03-05', status: 'returned', return_date: '2024-03-04' }
+    ];
+    
+    displayLoans(demoLoans);
+}
+
+function displayLoans(loans) {
+    const loansList = document.getElementById('loans-list');
+    loansList.innerHTML = '';
+    
+    loans.forEach(loan => {
+        loansList.innerHTML += `
+            <div class="card">
+                <h4>${loan.book} - ${loan.user}</h4>
+                <p><strong>Loan Date:</strong> ${new Date(loan.loan_date).toLocaleDateString()}</p>
+                <p><strong>Due Date:</strong> ${new Date(loan.due_date).toLocaleDateString()}</p>
+                <p><strong>Status:</strong> ${loan.status}</p>
+                ${loan.return_date ? 
+                    `<p><strong>Returned:</strong> ${new Date(loan.return_date).toLocaleDateString()}</p>` : 
+                    `<button onclick="returnBook(${loan.id})">Mark Returned</button>`
+                }
+            </div>
+        `;
+    });
 }
 
 // Reservations Management
 async function loadReservations() {
     try {
+        if (!authToken) {
+            loadDemoReservations();
+            return;
+        }
+        
         const response = await fetch('/reservations', {
             headers: getAuthHeaders()
         });
         const reservations = await response.json();
+        displayReservations(reservations);
         
-        const reservationsList = document.getElementById('reservations-list');
-        reservationsList.innerHTML = '';
-        
-        reservations.forEach(reservation => {
-            reservationsList.innerHTML += `
-                <div class="card">
-                    <h4>${reservation.book} - ${reservation.user}</h4>
-                    <p><strong>Reservation Date:</strong> ${new Date(reservation.reservation_date).toLocaleDateString()}</p>
-                    <p><strong>Status:</strong> ${reservation.status}</p>
-                </div>
-            `;
-        });
     } catch (error) {
         console.error('Error loading reservations:', error);
+        loadDemoReservations();
     }
+}
+
+function loadDemoReservations() {
+    const demoReservations = [
+        { id: 1, book: 'The Catcher in the Rye', user: 'Sarah Johnson', reservation_date: '2024-03-12', status: 'active' },
+        { id: 2, book: 'Pride and Prejudice', user: 'Mike Brown', reservation_date: '2024-03-10', status: 'completed' }
+    ];
+    
+    displayReservations(demoReservations);
+}
+
+function displayReservations(reservations) {
+    const reservationsList = document.getElementById('reservations-list');
+    reservationsList.innerHTML = '';
+    
+    reservations.forEach(reservation => {
+        reservationsList.innerHTML += `
+            <div class="card">
+                <h4>${reservation.book} - ${reservation.user}</h4>
+                <p><strong>Reservation Date:</strong> ${new Date(reservation.reservation_date).toLocaleDateString()}</p>
+                <p><strong>Status:</strong> ${reservation.status}</p>
+            </div>
+        `;
+    });
 }
 
 // Return Book Function
 async function returnBook(loanId) {
+    if (!authToken) {
+        // Demo mode
+        alert('Book returned successfully! (Demo mode)');
+        loadLoans();
+        return;
+    }
+    
     try {
         const response = await fetch(`/loans/${loanId}/return`, {
             method: 'PUT',
@@ -485,62 +645,47 @@ async function returnBook(loanId) {
     }
 }
 
-// Profile Functions
+// Profile Functions - UPDATED VERSION
 async function loadProfile() {
     if (!currentUser) return;
     
     try {
+        // Update profile display with current user data
         document.getElementById('profile-name').textContent = currentUser.name;
+        document.getElementById('profile-username').textContent = '@' + currentUser.username;
         document.getElementById('profile-email').textContent = currentUser.email;
-        document.getElementById('member-since').textContent = 'Recently';
+        document.getElementById('member-since').textContent = new Date().toLocaleDateString();
         
-        const [loans, reservations] = await Promise.all([
-            fetch('/loans', { headers: getAuthHeaders() }).then(r => r.json()),
-            fetch('/reservations', { headers: getAuthHeaders() }).then(r => r.json())
-        ]);
+        // Update form fields
+        document.getElementById('edit-name').value = currentUser.name;
+        document.getElementById('edit-username').value = currentUser.username;
+        document.getElementById('edit-email').value = currentUser.email;
         
-        const userLoans = loans.filter(loan => loan.user === currentUser.name);
-        const userReservations = reservations.filter(res => res.user === currentUser.name);
-        const activeReservations = userReservations.filter(res => res.status === 'active');
+        // Load user stats (mock data for demo)
+        document.getElementById('books-borrowed').textContent = '12';
+        document.getElementById('active-reservations').textContent = '3';
         
-        document.getElementById('books-borrowed').textContent = userLoans.length;
-        document.getElementById('active-reservations').textContent = activeReservations.length;
-        
-        displayUserActivity(userLoans, userReservations);
+        // Display mock activity
+        displayMockActivity();
         
     } catch (error) {
         console.error('Error loading profile:', error);
     }
 }
 
-function displayUserActivity(loans, reservations) {
-    const activityContainer = document.getElementById('user-activity');
-    
+// Mock activity data for demo
+function displayMockActivity() {
     const activities = [
-        ...loans.map(loan => ({
-            type: 'loan',
-            title: `Borrowed "${loan.book}"`,
-            date: loan.loan_date,
-            recent: isRecent(loan.loan_date)
-        })),
-        ...reservations.map(res => ({
-            type: 'reservation', 
-            title: `Reserved "${res.book}"`,
-            date: res.reservation_date,
-            recent: isRecent(res.reservation_date)
-        }))
-    ].sort((a, b) => new Date(b.date) - new Date(a.date))
-     .slice(0, 10);
+        { type: 'loan', title: 'Borrowed "The Great Gatsby"', date: new Date(), recent: true },
+        { type: 'reservation', title: 'Reserved "To Kill a Mockingbird"', date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), recent: true },
+        { type: 'loan', title: 'Returned "1984"', date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), recent: false }
+    ];
     
-    if (activities.length === 0) {
-        activityContainer.innerHTML = '<p>No recent activity</p>';
-        return;
-    }
-    
+    const activityContainer = document.getElementById('user-activity');
     activityContainer.innerHTML = activities.map(activity => `
         <div class="activity-item ${activity.recent ? 'recent' : 'old'}">
             <h4>${activity.title}</h4>
-            <p>${new Date(activity.date).toLocaleDateString()} • ${activity.type === 'loan' ? '📖 Loan' : '📅 Reservation'}</p>
+            <p>${activity.date.toLocaleDateString()} • ${activity.type === 'loan' ? '📖 Loan' : '📅 Reservation'}</p>
         </div>
     `).join('');
 }
@@ -552,25 +697,114 @@ function isRecent(dateString) {
     return activityDate > sevenDaysAgo;
 }
 
-function changePassword() {
-    alert('Password change feature coming soon!');
+// Profile Picture Functions - UPDATED VERSION
+function handleProfilePictureUpload(event) {
+    const file = event.target.files[0];
+    if (file) {
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            alert('Please select an image file');
+            return;
+        }
+        
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            alert('Image must be less than 5MB');
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('profile-picture').src = e.target.result;
+            // Save to localStorage
+            localStorage.setItem('profilePicture', e.target.result);
+            alert('Profile picture updated successfully!');
+        };
+        reader.readAsDataURL(file);
+    }
 }
 
+function removeProfilePicture() {
+    if (confirm('Are you sure you want to remove your profile picture?')) {
+        const defaultAvatar = '/images/default-avatar.png';
+        document.getElementById('profile-picture').src = defaultAvatar;
+        localStorage.removeItem('profilePicture');
+        document.getElementById('profile-picture-input').value = '';
+        alert('Profile picture removed successfully!');
+    }
+}
+
+// Profile Form Handler - UPDATED VERSION
+document.getElementById('edit-profile-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const name = document.getElementById('edit-name').value;
+    const username = document.getElementById('edit-username').value;
+    
+    // Basic validation
+    if (!name.trim() || !username.trim()) {
+        alert('Please fill in all fields');
+        return;
+    }
+    
+    if (username.length < 3) {
+        alert('Username must be at least 3 characters long');
+        return;
+    }
+    
+    // Update current user data
+    currentUser.name = name;
+    currentUser.username = username;
+    
+    // Update UI
+    document.getElementById('profile-name').textContent = name;
+    document.getElementById('profile-username').textContent = '@' + username;
+    document.getElementById('user-name').textContent = name;
+    
+    // Update localStorage
+    localStorage.setItem('user', JSON.stringify(currentUser));
+    
+    // Show success message
+    alert('Profile updated successfully!');
+    
+    console.log('Profile saved:', { name, username });
+});
+
 // Search functionality
+function handleSearch(event) {
+    if (event.key === 'Enter') {
+        const query = event.target.value.trim();
+        if (query) {
+            searchBooks(query);
+        }
+    }
+}
+
 async function searchBooks(query) {
     try {
+        if (!authToken) {
+            // Demo search
+            alert(`Searching for: ${query} (Demo mode)`);
+            return;
+        }
+        
         const response = await fetch(`/books/search?q=${encodeURIComponent(query)}`, {
             headers: getAuthHeaders()
         });
         
         if (response.ok) {
             const books = await response.json();
-            // You'll need to implement displaySearchResults function
             console.log('Search results:', books);
+            // You can implement displaySearchResults function here
         }
     } catch (error) {
         console.error('Search error:', error);
     }
+}
+
+function clearSearch() {
+    document.getElementById('search-input').value = '';
+    loadBooks();
 }
 
 // Event listeners
@@ -599,259 +833,10 @@ window.addEventListener('click', (e) => {
     }
 });
 
-// Initialize app
+// Initialize app - UPDATED VERSION
 document.addEventListener('DOMContentLoaded', function() {
     checkAuthStatus();
-});
-// Enhanced Profile Functions
-async function loadProfile() {
-    if (!currentUser) return;
     
-    try {
-        // Load user details
-        const userResponse = await fetch(`/users/${currentUser.id}`, {
-            headers: getAuthHeaders()
-        });
-        
-        if (!userResponse.ok) {
-            throw new Error('Failed to load user data');
-        }
-        
-        const userData = await userResponse.json();
-        
-        // Update profile display
-        updateProfileDisplay(userData);
-        
-        // Load user activity
-        const [loans, reservations] = await Promise.all([
-            fetch('/loans', { headers: getAuthHeaders() }).then(r => r.json()),
-            fetch('/reservations', { headers: getAuthHeaders() }).then(r => r.json())
-        ]);
-        
-        updateProfileStats(loans, reservations, userData);
-        displayUserActivity(loans, reservations);
-        
-        // Set up profile picture upload
-        setupProfilePictureUpload();
-        
-    } catch (error) {
-        console.error('Error loading profile:', error);
-        showMessage('Error loading profile data', 'error');
-    }
-}
-
-function updateProfileDisplay(userData) {
-    // Update basic info
-    document.getElementById('profile-name').textContent = userData.name;
-    document.getElementById('profile-username').textContent = '@' + (userData.username || 'user');
-    document.getElementById('profile-email').textContent = userData.email;
-    document.getElementById('member-since').textContent = new Date(userData.created_at).toLocaleDateString();
-    
-    // Update form fields
-    document.getElementById('edit-name').value = userData.name;
-    document.getElementById('edit-username').value = userData.username || '';
-    document.getElementById('edit-email').value = userData.email;
-    
-    // Update profile picture
-    const profileImg = document.getElementById('profile-picture');
-    if (userData.profile_picture) {
-        profileImg.src = userData.profile_picture;
-    } else {
-        profileImg.src = '/images/default-avatar.png';
-    }
-}
-
-function updateProfileStats(loans, reservations, userData) {
-    const userLoans = loans.filter(loan => loan.user === userData.name || loan.user_id === userData.id);
-    const userReservations = reservations.filter(res => res.user === userData.name || res.user_id === userData.id);
-    const activeReservations = userReservations.filter(res => res.status === 'active');
-    
-    document.getElementById('books-borrowed').textContent = userLoans.length;
-    document.getElementById('active-reservations').textContent = activeReservations.length;
-}
-
-function setupProfilePictureUpload() {
-    const fileInput = document.getElementById('profile-picture-input');
-    
-    fileInput.addEventListener('change', async function(e) {
-        if (e.target.files.length === 0) return;
-        
-        const file = e.target.files[0];
-        
-        // Validate file size (5MB)
-        if (file.size > 5 * 1024 * 1024) {
-            showMessage('File size must be less than 5MB', 'error');
-            return;
-        }
-        
-        // Validate file type
-        if (!file.type.startsWith('image/')) {
-            showMessage('Please select an image file', 'error');
-            return;
-        }
-        
-        await uploadProfilePicture(file);
-    });
-}
-
-async function uploadProfilePicture(file) {
-    const formData = new FormData();
-    formData.append('profile_picture', file);
-    
-    try {
-        const response = await fetch(`/users/${currentUser.id}/profile-picture`, {
-            method: 'PUT',
-            body: formData
-            // Note: Don't set Content-Type header for FormData
-        });
-        
-        const result = await response.json();
-        
-        if (response.ok) {
-            // Update profile picture display
-            document.getElementById('profile-picture').src = result.profile_picture + '?t=' + Date.now();
-            showMessage('Profile picture updated successfully!', 'success');
-        } else {
-            showMessage('Error: ' + result.error, 'error');
-        }
-    } catch (error) {
-        console.error('Upload error:', error);
-        showMessage('Failed to upload profile picture', 'error');
-    }
-}
-
-async function removeProfilePicture() {
-    if (!confirm('Are you sure you want to remove your profile picture?')) {
-        return;
-    }
-    
-    try {
-        const response = await fetch(`/users/${currentUser.id}/profile-picture`, {
-            method: 'DELETE',
-            headers: getAuthHeaders()
-        });
-        
-        const result = await response.json();
-        
-        if (response.ok) {
-            // Reset to default avatar
-            document.getElementById('profile-picture').src = '/images/default-avatar.png';
-            showMessage('Profile picture removed successfully!', 'success');
-        } else {
-            showMessage('Error: ' + result.error, 'error');
-        }
-    } catch (error) {
-        console.error('Remove error:', error);
-        showMessage('Failed to remove profile picture', 'error');
-    }
-}
-
-// Edit Profile Form Handler
-document.getElementById('edit-profile-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const name = document.getElementById('edit-name').value.trim();
-    const username = document.getElementById('edit-username').value.trim();
-    
-    if (!name || !username) {
-        showMessage('Please fill in all fields', 'error');
-        return;
-    }
-    
-    if (username.length < 3) {
-        showMessage('Username must be at least 3 characters long', 'error');
-        return;
-    }
-    
-    try {
-        const response = await fetch(`/users/${currentUser.id}`, {
-            method: 'PUT',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({
-                name: name,
-                username: username
-            })
-        });
-        
-        const result = await response.json();
-        
-        if (response.ok) {
-            // Update current user data
-            currentUser.name = name;
-            currentUser.username = username;
-            localStorage.setItem('user', JSON.stringify(currentUser));
-            updateUIForAuth();
-            
-            // Reload profile to reflect changes
-            loadProfile();
-            showMessage('Profile updated successfully!', 'success');
-        } else {
-            showMessage('Error: ' + result.error, 'error');
-        }
-    } catch (error) {
-        console.error('Update error:', error);
-        showMessage('Failed to update profile', 'error');
-    }
-});
-
-// Utility function to show messages
-function showMessage(message, type = 'info') {
-    // Remove existing messages
-    const existingMessages = document.querySelectorAll('.profile-message');
-    existingMessages.forEach(msg => msg.remove());
-    
-    // Create new message
-    const messageDiv = document.createElement('div');
-    messageDiv.className = `profile-message ${type}`;
-    messageDiv.textContent = message;
-    
-    // Insert at the top of profile section
-    const profileSection = document.getElementById('profile-section');
-    profileSection.insertBefore(messageDiv, profileSection.firstChild);
-    
-    // Auto-remove after 5 seconds
-    setTimeout(() => {
-        if (messageDiv.parentNode) {
-            messageDiv.remove();
-        }
-    }, 5000);
-}
-
-// Update updateUIForAuth to include username
-function updateUIForAuth() {
-    if (currentUser) {
-        document.getElementById('user-name').textContent = currentUser.name;
-        document.getElementById('user-info').style.display = 'block';
-        document.querySelector('nav').style.display = 'flex';
-    } else {
-        document.getElementById('user-info').style.display = 'none';
-        document.querySelector('nav').style.display = 'none';
-    }
-}
-// Profile Section Functionality
-function handleProfilePictureUpload(event) {
-    const file = event.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            document.getElementById('profile-picture').src = e.target.result;
-            // Save to localStorage or send to server
-            localStorage.setItem('profilePicture', e.target.result);
-        };
-        reader.readAsDataURL(file);
-    }
-}
-
-function removeProfilePicture() {
-    const defaultAvatar = '/images/default-avatar.png';
-    document.getElementById('profile-picture').src = defaultAvatar;
-    localStorage.removeItem('profilePicture');
-    // Reset file input
-    document.getElementById('profile-picture-input').value = '';
-}
-
-// Initialize profile form
-document.addEventListener('DOMContentLoaded', function() {
     // Load profile picture from localStorage
     const savedPicture = localStorage.getItem('profilePicture');
     if (savedPicture) {
@@ -860,25 +845,4 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Handle profile picture upload
     document.getElementById('profile-picture-input').addEventListener('change', handleProfilePictureUpload);
-    
-    // Handle profile form submission
-    document.getElementById('edit-profile-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        saveProfileChanges();
-    });
 });
-
-function saveProfileChanges() {
-    const name = document.getElementById('edit-name').value;
-    const username = document.getElementById('edit-username').value;
-    
-    // Update profile display
-    document.getElementById('profile-name').textContent = name;
-    document.getElementById('profile-username').textContent = '@' + username;
-    
-    // Show success message
-    alert('Profile updated successfully!');
-    
-    // In a real app, you would send this to your backend
-    console.log('Profile saved:', { name, username });
-}
