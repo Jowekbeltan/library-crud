@@ -993,5 +993,299 @@ function toggleAppViews() {
         mainApp.style.display = 'none';
     }
 }
+// Enhanced Books Functions
+let currentFilters = {
+    category: '',
+    genre: '',
+    year: '',
+    search: '',
+    sortBy: 'title',
+    sortOrder: 'ASC'
+};
 
+async function loadBooks() {
+    if (!currentUser) return;
+    
+    try {
+        // Build query string from filters
+        const queryParams = new URLSearchParams();
+        Object.keys(currentFilters).forEach(key => {
+            if (currentFilters[key]) {
+                queryParams.append(key, currentFilters[key]);
+            }
+        });
+        
+        const response = await fetch(`/books?${queryParams}`, {
+            headers: getAuthHeaders()
+        });
+        
+        if (!response.ok) throw new Error('Failed to load books');
+        
+        const books = await response.json();
+        displayBooks(books);
+        
+        // Record view for analytics (optional)
+        books.forEach(book => {
+            fetch(`/books/${book.id}/view`, { 
+                method: 'POST',
+                headers: getAuthHeaders() 
+            }).catch(console.error);
+        });
+        
+    } catch (error) {
+        console.error('Error loading books:', error);
+    }
+}
+
+function displayBooks(books) {
+    const booksList = document.getElementById('books-list');
+    const booksCount = document.getElementById('books-count');
+    
+    booksCount.textContent = books.length;
+    booksList.innerHTML = '';
+    
+    if (books.length === 0) {
+        booksList.innerHTML = '<p class="no-books">No books found matching your criteria.</p>';
+        return;
+    }
+    
+    books.forEach(book => {
+        const tags = book.tags ? (typeof book.tags === 'string' ? JSON.parse(book.tags) : book.tags) : [];
+        
+        booksList.innerHTML += `
+            <div class="book-card">
+                <img src="${book.cover_image || '/images/default-book-cover.png'}" 
+                     alt="${book.title}" 
+                     class="book-cover"
+                     onerror="this.src='/images/default-book-cover.png'">
+                <div class="book-details">
+                    <h4>${book.title}</h4>
+                    <p><strong>Author:</strong> ${book.author}</p>
+                    
+                    <div class="book-meta">
+                        ${book.category ? `<span>📚 ${book.category}</span>` : ''}
+                        ${book.genre ? `<span>🏷️ ${book.genre}</span>` : ''}
+                        ${book.published_year ? `<span>📅 ${book.published_year}</span>` : ''}
+                        <span class="status-${book.status}">${book.status}</span>
+                    </div>
+                    
+                    ${book.isbn ? `<p><strong>ISBN:</strong> ${book.isbn}</p>` : ''}
+                    
+                    ${tags.length > 0 ? `
+                        <div class="book-tags">
+                            ${tags.map(tag => `<span class="book-tag">${tag}</span>`).join('')}
+                        </div>
+                    ` : ''}
+                    
+                    <div class="book-stats">
+                        <div class="book-stat">👁️ ${book.views_count || 0} views</div>
+                        <div class="book-stat">📖 ${book.borrow_count || 0} borrows</div>
+                    </div>
+                    
+                    <p><strong>Added:</strong> ${new Date(book.created_at).toLocaleDateString()}</p>
+                    
+                    <div class="card-actions">
+                        <button class="delete" onclick="deleteBook(${book.id})">Delete</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+}
+
+// Filter Functions
+async function loadFilterOptions() {
+    try {
+        const [categories, genres, years] = await Promise.all([
+            fetch('/books/categories', { headers: getAuthHeaders() }).then(r => r.json()),
+            fetch('/books/genres', { headers: getAuthHeaders() }).then(r => r.json()),
+            fetch('/books/years', { headers: getAuthHeaders() }).then(r => r.json())
+        ]);
+        
+        populateSelect('category-filter', categories);
+        populateSelect('genre-filter', genres);
+        populateSelect('year-filter', years);
+        
+    } catch (error) {
+        console.error('Error loading filter options:', error);
+    }
+}
+
+function populateSelect(selectId, options) {
+    const select = document.getElementById(selectId);
+    // Keep the first option (All)
+    const firstOption = select.options[0];
+    select.innerHTML = '';
+    select.appendChild(firstOption);
+    
+    options.forEach(option => {
+        const optionElement = document.createElement('option');
+        optionElement.value = option;
+        optionElement.textContent = option;
+        select.appendChild(optionElement);
+    });
+}
+
+function applyFilters() {
+    currentFilters = {
+        category: document.getElementById('category-filter').value,
+        genre: document.getElementById('genre-filter').value,
+        year: document.getElementById('year-filter').value,
+        search: currentFilters.search, // Keep existing search
+        sortBy: document.getElementById('sort-by').value,
+        sortOrder: document.getElementById('sort-order').value
+    };
+    
+    loadBooks();
+}
+
+function clearFilters() {
+    document.getElementById('category-filter').value = '';
+    document.getElementById('genre-filter').value = '';
+    document.getElementById('year-filter').value = '';
+    document.getElementById('sort-by').value = 'title';
+    document.getElementById('sort-order').value = 'ASC';
+    
+    currentFilters = {
+        category: '',
+        genre: '',
+        year: '',
+        search: '',
+        sortBy: 'title',
+        sortOrder: 'ASC'
+    };
+    
+    loadBooks();
+}
+
+// Enhanced Add Book Form
+document.getElementById('add-book-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData();
+    formData.append('title', document.getElementById('title').value.trim());
+    formData.append('author', document.getElementById('author').value.trim());
+    formData.append('category', document.getElementById('category').value.trim());
+    formData.append('genre', document.getElementById('genre').value.trim());
+    formData.append('published_year', document.getElementById('published_year').value);
+    formData.append('isbn', document.getElementById('isbn').value.trim());
+    formData.append('tags', document.getElementById('tags').value.trim());
+    
+    const coverImage = document.getElementById('cover_image').files[0];
+    if (coverImage) {
+        formData.append('cover_image', coverImage);
+    }
+    
+    try {
+        const response = await fetch('/books', {
+            method: 'POST',
+            body: formData
+            // Note: Don't set Content-Type for FormData
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            document.getElementById('add-book-form').reset();
+            alert('Book added successfully!');
+            loadBooks();
+            loadFilterOptions(); // Reload filters in case new categories were added
+        } else {
+            alert('Error adding book: ' + (result.error || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Network error:', error);
+        alert('Network error: Could not connect to server');
+    }
+});
+
+// Update search to use new filtering
+function handleSearch(event) {
+    if (event.key === 'Enter') {
+        currentFilters.search = event.target.value.trim();
+        loadBooks();
+    }
+}
+
+function clearSearch() {
+    document.getElementById('search-input').value = '';
+    currentFilters.search = '';
+    loadBooks();
+}
+
+// Load filter options when books section is shown
+function loadSectionData(section) {
+    switch(section) {
+        case 'books':
+            loadBooks();
+            loadFilterOptions();
+            break;
+        // ... other cases remain the same
+    }
+}
+// Analytics Functions
+async function loadAnalytics() {
+    try {
+        const [popularBooks, categories] = await Promise.all([
+            fetch('/books/analytics/popular?limit=6', { headers: getAuthHeaders() }).then(r => r.json()),
+            fetch('/books/categories', { headers: getAuthHeaders() }).then(r => r.json())
+        ]);
+        
+        displayPopularBooks(popularBooks);
+        updateQuickStats(popularBooks, categories);
+        
+    } catch (error) {
+        console.error('Error loading analytics:', error);
+    }
+}
+
+function displayPopularBooks(books) {
+    const container = document.getElementById('popular-books');
+    
+    if (books.length === 0) {
+        container.innerHTML = '<p>No analytics data available yet.</p>';
+        return;
+    }
+    
+    container.innerHTML = books.map(book => `
+        <div class="popular-book">
+            <img src="${book.cover_image || '/images/default-book-cover.png'}" 
+                 alt="${book.title}" 
+                 class="popular-book-cover"
+                 onerror="this.src='/images/default-book-cover.png'">
+            <div class="popular-book-details">
+                <h4>${book.title}</h4>
+                <p><strong>Author:</strong> ${book.author}</p>
+                <div class="popular-book-stats">
+                    <span>👁️ ${book.views_count} views</span>
+                    <span>📖 ${book.borrow_count} borrows</span>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function updateQuickStats(books, categories) {
+    if (books.length > 0) {
+        const mostViewed = books[0];
+        document.getElementById('most-viewed-count').textContent = mostViewed.views_count;
+        document.getElementById('most-viewed-book').textContent = mostViewed.title;
+        
+        const mostBorrowed = [...books].sort((a, b) => b.borrow_count - a.borrow_count)[0];
+        document.getElementById('most-borrowed-count').textContent = mostBorrowed.borrow_count;
+        document.getElementById('most-borrowed-book').textContent = mostBorrowed.title;
+    }
+    
+    document.getElementById('total-categories').textContent = categories.length;
+}
+
+// Update loadSectionData
+function loadSectionData(section) {
+    switch(section) {
+        case 'analytics':
+            loadAnalytics();
+            break;
+        // ... other cases
+    }
+}
 

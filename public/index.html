@@ -63,6 +63,7 @@
             <nav>
                 <button class="nav-btn active" onclick="showSection('dashboard')">📊 Dashboard</button>
                 <button class="nav-btn" onclick="showSection('books')">📚 Books</button>
+                <button class="nav-btn" onclick="showSection('analytics')">📈 Analytics</button>
                 <button class="nav-btn" onclick="showSection('users')">👥 Users</button>
                 <button class="nav-btn" onclick="showSection('loans')">📖 Loans</button>
                 <button class="nav-btn" onclick="showSection('reservations')">📅 Reservations</button>
@@ -145,36 +146,126 @@
             </div>
         </section>
 
-        <!-- Books Section -->
-        <section id="books-section" class="section">
-            <h2>📚 Book Management</h2>
-            
-            <!-- Add Book Form -->
-            <div class="form-container">
-                <h3>Add New Book</h3>
-                <form id="add-book-form">
-                    <input type="text" id="title" placeholder="Book Title" required>
-                    <input type="text" id="author" placeholder="Author" required>
-                    <input type="text" id="isbn" placeholder="ISBN">
-                    <button type="submit">Add Book</button>
-                </form>
-            </div>
+        <!-- Enhanced Books Section -->
+<section id="books-section" class="section">
+    <h2>📚 Book Management</h2>
+    
+    <!-- Filters and Sorting -->
+    <div class="filters-container">
+        <div class="filter-group">
+            <label>Category:</label>
+            <select id="category-filter">
+                <option value="">All Categories</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Genre:</label>
+            <select id="genre-filter">
+                <option value="">All Genres</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Year:</label>
+            <select id="year-filter">
+                <option value="">All Years</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Sort By:</label>
+            <select id="sort-by">
+                <option value="title">Title</option>
+                <option value="author">Author</option>
+                <option value="published_year">Year</option>
+                <option value="views_count">Popularity</option>
+                <option value="borrow_count">Most Borrowed</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Order:</label>
+            <select id="sort-order">
+                <option value="ASC">Ascending</option>
+                <option value="DESC">Descending</option>
+            </select>
+        </div>
+        <button onclick="applyFilters()">Apply Filters</button>
+        <button onclick="clearFilters()">Clear</button>
+    </div>
 
-            <!-- Search Bar -->
-            <div class="search-container">
-                <input type="text" id="search-input" placeholder="🔍 Search books by title, author, or ISBN..." 
-                       onkeyup="handleSearch(event)">
-                <button onclick="clearSearch()">Clear</button>
+    <!-- Enhanced Add Book Form -->
+    <div class="form-container">
+        <h3>Add New Book</h3>
+        <form id="add-book-form" enctype="multipart/form-data">
+            <div class="form-row">
+                <input type="text" id="title" placeholder="Book Title" required>
+                <input type="text" id="author" placeholder="Author" required>
             </div>
-
-            <!-- Books List -->
-            <div class="list-container">
-                <h3>All Books (<span id="books-count">0</span>)</h3>
-                <div id="books-list" class="cards-container">
-                    <!-- Books will be loaded here -->
+            <div class="form-row">
+                <input type="text" id="category" placeholder="Category (e.g., Fiction)" required>
+                <input type="text" id="genre" placeholder="Genre (e.g., Fantasy)">
+            </div>
+            <div class="form-row">
+                <input type="number" id="published_year" placeholder="Publication Year" min="1000" max="2030">
+                <input type="text" id="isbn" placeholder="ISBN">
+            </div>
+            <div class="form-row">
+                <input type="text" id="tags" placeholder="Tags (comma separated)">
+                <div class="file-upload">
+                    <label>Cover Image:</label>
+                    <input type="file" id="cover_image" accept="image/*">
                 </div>
             </div>
-        </section>
+            <button type="submit">Add Book</button>
+        </form>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="search-container">
+        <input type="text" id="search-input" placeholder="🔍 Search books by title, author, ISBN, or tags..." 
+               onkeyup="handleSearch(event)">
+        <button onclick="clearSearch()">Clear</button>
+    </div>
+
+    <!-- Books List -->
+    <div class="list-container">
+        <h3>All Books (<span id="books-count">0</span>)</h3>
+        <div id="books-list" class="cards-container">
+            <!-- Books will be loaded here -->
+        </div>
+    </div>
+</section>
+     
+     <!-- Analytics Section -->
+<section id="analytics-section" class="section">
+    <h2>📊 Library Analytics</h2>
+    
+    <div class="analytics-container">
+        <h3>📈 Popular Books</h3>
+        <div class="analytics-grid" id="popular-books">
+            <!-- Popular books will load here -->
+        </div>
+    </div>
+    
+    <div class="analytics-container">
+        <h3>📋 Quick Stats</h3>
+        <div class="stats-container">
+            <div class="stat-card">
+                <h3>📖 Most Viewed</h3>
+                <div class="stat-number" id="most-viewed-count">0</div>
+                <p id="most-viewed-book">Loading...</p>
+            </div>
+            <div class="stat-card">
+                <h3>🔥 Most Borrowed</h3>
+                <div class="stat-number" id="most-borrowed-count">0</div>
+                <p id="most-borrowed-book">Loading...</p>
+            </div>
+            <div class="stat-card">
+                <h3>📚 Total Categories</h3>
+                <div class="stat-number" id="total-categories">0</div>
+                <p>Unique categories</p>
+            </div>
+        </div>
+    </div>
+</section>
 
         <!-- Users Section -->
         <section id="users-section" class="section">
@@ -365,6 +456,8 @@
             <p>Already have an account? <a href="#" onclick="showLogin()">Sign in here</a></p>
         </div>
     </div>
+
+    
 
     <script src="js/app.js"></script>
 </body>
