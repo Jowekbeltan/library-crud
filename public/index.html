@@ -10,13 +10,14 @@
     <div class="container">
         <header>
             <h1>📚 Library Management System</h1>
-              <nav>
+               <nav>
     <button class="nav-btn active" onclick="showSection('dashboard')">📊 Dashboard</button>
     <button class="nav-btn" onclick="showSection('books')">📚 Books</button>
     <button class="nav-btn" onclick="showSection('users')">👥 Users</button>
     <button class="nav-btn" onclick="showSection('loans')">📖 Loans</button>
     <button class="nav-btn" onclick="showSection('reservations')">📅 Reservations</button>
     <button class="nav-btn" onclick="showSection('profile')">👤 Profile</button>
+    <button class="nav-btn" onclick="showSection('appearance')">🎨 Appearance</button>
 </nav>
         </header>
 
@@ -278,6 +279,86 @@
         <h3>Recent Activity</h3>
         <div id="user-activity" class="activity-list">
             <!-- Activity will be loaded here -->
+        </div>
+    </div>
+</section>
+
+<!-- Appearance Settings Section -->
+<section id="appearance-section" class="section">
+    <h2>🎨 Appearance Settings</h2>
+    
+    <div class="appearance-container">
+        <!-- Theme Selection -->
+        <div class="setting-card">
+            <h3>🌓 Theme</h3>
+            <div class="theme-options">
+                <label class="theme-option">
+                    <input type="radio" name="theme" value="light" checked>
+                    <div class="theme-preview light-theme">
+                        <div class="preview-header"></div>
+                        <div class="preview-content"></div>
+                    </div>
+                    <span>Light</span>
+                </label>
+                <label class="theme-option">
+                    <input type="radio" name="theme" value="dark">
+                    <div class="theme-preview dark-theme">
+                        <div class="preview-header"></div>
+                        <div class="preview-content"></div>
+                    </div>
+                    <span>Dark</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Wallpaper Settings -->
+        <div class="setting-card">
+            <h3>🖼️ Background Wallpaper</h3>
+            
+            <div class="current-wallpaper">
+                <h4>Current Wallpaper</h4>
+                <div id="current-wallpaper-preview" class="wallpaper-preview">
+                    <img id="wallpaper-image" src="" alt="Current Wallpaper">
+                    <div id="default-wallpaper" class="default-wallpaper">
+                        <span>Default Background</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="wallpaper-actions">
+                <h4>Change Wallpaper</h4>
+                <div class="action-buttons">
+                    <input type="file" id="wallpaper-input" accept="image/*" style="display: none;">
+                    <button onclick="document.getElementById('wallpaper-input').click()">
+                        📁 Upload Custom Wallpaper
+                    </button>
+                    <button onclick="resetWallpaper()" class="delete">
+                        🔄 Reset to Default
+                    </button>
+                </div>
+                
+                <div class="predefined-wallpapers">
+                    <h4>Predefined Wallpapers</h4>
+                    <div class="wallpaper-grid">
+                        <div class="wallpaper-option" data-wallpaper="/images/wallpapers/gradient1.jpg">
+                            <div class="wallpaper-thumb gradient-bg-1"></div>
+                            <span>Gradient Blue</span>
+                        </div>
+                        <div class="wallpaper-option" data-wallpaper="/images/wallpapers/gradient2.jpg">
+                            <div class="wallpaper-thumb gradient-bg-2"></div>
+                            <span>Gradient Purple</span>
+                        </div>
+                        <div class="wallpaper-option" data-wallpaper="/images/wallpapers/pattern1.jpg">
+                            <div class="wallpaper-thumb pattern-bg-1"></div>
+                            <span>Geometric Pattern</span>
+                        </div>
+                        <div class="wallpaper-option" data-wallpaper="/images/wallpapers/pattern2.jpg">
+                            <div class="wallpaper-thumb pattern-bg-2"></div>
+                            <span>Minimal Pattern</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </section>

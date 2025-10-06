@@ -12,6 +12,7 @@ const usersRoutes = require('./routes/users');
 const booksRoutes = require('./routes/books');
 const loansRoutes = require('./routes/loans');
 const reservationsRoutes = require('./routes/reservations');
+const preferencesRoutes = require('./routes/preferences'); // Add this line
 
 // ALL ROUTES PUBLIC - NO AUTHENTICATION
 app.use('/auth', authRoutes);
@@ -19,6 +20,7 @@ app.use('/users', usersRoutes);
 app.use('/books', booksRoutes);
 app.use('/loans', loansRoutes);
 app.use('/reservations', reservationsRoutes);
+app.use('/preferences', preferencesRoutes); // Add this line
 
 // Public homepage
 app.get('/', (req, res) => {

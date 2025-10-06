@@ -875,3 +875,224 @@ button.delete:hover {
         flex-direction: column;
     }
 } 
+/* Appearance Settings Styles */
+.appearance-container {
+    display: grid;
+    gap: 30px;
+    max-width: 1000px;
+}
+
+.setting-card {
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    border-left: 5px solid #3498db;
+}
+
+.setting-card h3 {
+    margin-top: 0;
+    color: #2c3e50;
+    border-bottom: 2px solid #f8f9fa;
+    padding-bottom: 15px;
+}
+
+/* Theme Options */
+.theme-options {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.theme-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    padding: 15px;
+    border: 2px solid #e1e8ed;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.theme-option:hover {
+    border-color: #3498db;
+}
+
+.theme-option input[type="radio"] {
+    display: none;
+}
+
+.theme-option input[type="radio"]:checked + .theme-preview {
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.3);
+}
+
+.theme-preview {
+    width: 120px;
+    height: 80px;
+    border: 2px solid #e1e8ed;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 10px;
+    transition: all 0.3s ease;
+}
+
+.light-theme .preview-header {
+    height: 20px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e1e8ed;
+}
+
+.light-theme .preview-content {
+    height: 60px;
+    background: white;
+}
+
+.dark-theme .preview-header {
+    height: 20px;
+    background: #2c3e50;
+    border-bottom: 1px solid #34495e;
+}
+
+.dark-theme .preview-content {
+    height: 60px;
+    background: #34495e;
+}
+
+/* Wallpaper Styles */
+.wallpaper-preview {
+    width: 100%;
+    height: 200px;
+    border: 2px solid #e1e8ed;
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 15px 0;
+    position: relative;
+}
+
+#wallpaper-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.default-wallpaper {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 1.2em;
+}
+
+.wallpaper-actions .action-buttons {
+    display: flex;
+    gap: 15px;
+    margin: 20px 0;
+    flex-wrap: wrap;
+}
+
+/* Predefined Wallpapers */
+.predefined-wallpapers {
+    margin-top: 25px;
+}
+
+.wallpaper-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.wallpaper-option {
+    cursor: pointer;
+    text-align: center;
+    padding: 15px;
+    border: 2px solid #e1e8ed;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.wallpaper-option:hover {
+    border-color: #3498db;
+    transform: translateY(-2px);
+}
+
+.wallpaper-thumb {
+    width: 100%;
+    height: 80px;
+    border-radius: 5px;
+    margin-bottom: 8px;
+}
+
+/* Predefined wallpaper backgrounds */
+.gradient-bg-1 {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.gradient-bg-2 {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.pattern-bg-1 {
+    background: 
+        linear-gradient(45deg, #3498db 25%, transparent 25%), 
+        linear-gradient(-45deg, #3498db 25%, transparent 25%), 
+        linear-gradient(45deg, transparent 75%, #3498db 75%), 
+        linear-gradient(-45deg, transparent 75%, #3498db 75%);
+    background-size: 20px 20px;
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+}
+
+.pattern-bg-2 {
+    background: 
+        radial-gradient(circle at 100% 50%, transparent 20%, #e74c3c 21%, #e74c3c 34%, transparent 35%, transparent),
+        radial-gradient(circle at 0% 50%, transparent 20%, #e74c3c 21%, #e74c3c 34%, transparent 35%, transparent) 0 -50px;
+    background-color: #f39c12;
+    background-size: 75px 100px;
+}
+
+/* Dark theme support */
+body.dark-theme {
+    background: #2c3e50;
+    color: #ecf0f1;
+}
+
+body.dark-theme .container {
+    background: #34495e;
+    color: #ecf0f1;
+}
+
+body.dark-theme .card,
+body.dark-theme .setting-card,
+body.dark-theme .profile-card {
+    background: #2c3e50;
+    color: #ecf0f1;
+    border-color: #34495e;
+}
+
+body.dark-theme input,
+body.dark-theme button {
+    background: #34495e;
+    color: #ecf0f1;
+    border-color: #4a6572;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .theme-options {
+        flex-direction: column;
+    }
+    
+    .wallpaper-actions .action-buttons {
+        flex-direction: column;
+    }
+    
+    .wallpaper-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

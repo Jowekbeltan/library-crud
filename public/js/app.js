@@ -656,3 +656,223 @@ function saveProfileChanges() {
     // In a real app, you would send this to your backend
     console.log('Profile saved:', { name, username });
 }
+// Appearance Settings Functions
+let currentPreferences = null;
+
+async function loadAppearanceSettings() {
+    if (!currentUser) return;
+    
+    try {
+        const response = await fetch(`/preferences/${currentUser.id}`, {
+            headers: getAuthHeaders()
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to load preferences');
+        }
+        
+        currentPreferences = await response.json();
+        updateAppearanceUI(currentPreferences);
+        
+    } catch (error) {
+        console.error('Error loading appearance settings:', error);
+        showMessage('Error loading appearance settings', 'error');
+    }
+}
+
+function updateAppearanceUI(preferences) {
+    // Update theme selection
+    const themeRadios = document.querySelectorAll('input[name="theme"]');
+    themeRadios.forEach(radio => {
+        radio.checked = radio.value === preferences.theme;
+    });
+    
+    // Update wallpaper display
+    updateWallpaperDisplay(preferences.background_wallpaper);
+    
+    // Apply current theme to body
+    document.body.className = preferences.theme + '-theme';
+}
+
+function updateWallpaperDisplay(wallpaperPath) {
+    const wallpaperImg = document.getElementById('wallpaper-image');
+    const defaultWallpaper = document.getElementById('default-wallpaper');
+    
+    if (wallpaperPath) {
+        wallpaperImg.src = wallpaperPath;
+        wallpaperImg.style.display = 'block';
+        defaultWallpaper.style.display = 'none';
+        
+        // Apply wallpaper to background
+        applyWallpaperToBackground(wallpaperPath);
+    } else {
+        wallpaperImg.style.display = 'none';
+        defaultWallpaper.style.display = 'flex';
+        
+        // Apply default background
+        applyDefaultBackground();
+    }
+}
+
+function applyWallpaperToBackground(wallpaperPath) {
+    document.body.style.backgroundImage = `url('${wallpaperPath}')`;
+    document.body.style.backgroundSize = 'cover';
+    document.body.style.backgroundPosition = 'center';
+    document.body.style.backgroundAttachment = 'fixed';
+}
+
+function applyDefaultBackground() {
+    document.body.style.backgroundImage = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+    document.body.style.backgroundSize = 'cover';
+    document.body.style.backgroundPosition = 'center';
+    document.body.style.backgroundAttachment = 'fixed';
+}
+
+// Theme change handler
+document.querySelectorAll('input[name="theme"]').forEach(radio => {
+    radio.addEventListener('change', async function() {
+        if (!currentUser || !currentPreferences) return;
+        
+        const theme = this.value;
+        
+        try {
+            const response = await fetch(`/preferences/${currentUser.id}/theme`, {
+                method: 'PUT',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({ theme })
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                currentPreferences.theme = theme;
+                document.body.className = theme + '-theme';
+                showMessage('Theme updated successfully!', 'success');
+            } else {
+                showMessage('Error: ' + result.error, 'error');
+            }
+        } catch (error) {
+            console.error('Theme update error:', error);
+            showMessage('Failed to update theme', 'error');
+        }
+    });
+});
+
+// Wallpaper upload handler
+document.getElementById('wallpaper-input').addEventListener('change', async function(e) {
+    if (e.target.files.length === 0) return;
+    
+    const file = e.target.files[0];
+    
+    // Validate file
+    if (file.size > 10 * 1024 * 1024) {
+        showMessage('File size must be less than 10MB', 'error');
+        return;
+    }
+    
+    if (!file.type.startsWith('image/')) {
+        showMessage('Please select an image file', 'error');
+        return;
+    }
+    
+    await uploadWallpaper(file);
+});
+
+async function uploadWallpaper(file) {
+    const formData = new FormData();
+    formData.append('wallpaper', file);
+    
+    try {
+        const response = await fetch(`/preferences/${currentUser.id}/wallpaper`, {
+            method: 'PUT',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            currentPreferences.background_wallpaper = result.background_wallpaper;
+            updateWallpaperDisplay(result.background_wallpaper);
+            showMessage('Wallpaper updated successfully!', 'success');
+        } else {
+            showMessage('Error: ' + result.error, 'error');
+        }
+    } catch (error) {
+        console.error('Wallpaper upload error:', error);
+        showMessage('Failed to upload wallpaper', 'error');
+    }
+}
+
+// Reset wallpaper function
+async function resetWallpaper() {
+    if (!confirm('Reset to default wallpaper?')) return;
+    
+    try {
+        const response = await fetch(`/preferences/${currentUser.id}/wallpaper`, {
+            method: 'DELETE',
+            headers: getAuthHeaders()
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            currentPreferences.background_wallpaper = null;
+            updateWallpaperDisplay(null);
+            showMessage('Wallpaper reset to default!', 'success');
+        } else {
+            showMessage('Error: ' + result.error, 'error');
+        }
+    } catch (error) {
+        console.error('Wallpaper reset error:', error);
+        showMessage('Failed to reset wallpaper', 'error');
+    }
+}
+
+// Predefined wallpaper selection
+document.querySelectorAll('.wallpaper-option').forEach(option => {
+    option.addEventListener('click', function() {
+        const wallpaperPath = this.getAttribute('data-wallpaper');
+        // For predefined wallpapers, you might want to store them in your uploads folder
+        // or handle them differently since they're not user-uploaded
+        showMessage('Predefined wallpapers need to be implemented with actual image files', 'info');
+    });
+});
+
+// Update loadSectionData to include appearance
+function loadSectionData(section) {
+    switch(section) {
+        case 'dashboard':
+            loadDashboard();
+            break;
+        case 'books':
+            loadBooks();
+            break;
+        case 'users':
+            loadUsers();
+            break;
+        case 'loans':
+            loadLoans();
+            break;
+        case 'reservations':
+            loadReservations();
+            break;
+        case 'profile':
+            loadProfile();
+            break;
+        case 'appearance':
+            loadAppearanceSettings();
+            break;
+    }
+}
+
+// Load user preferences when app starts
+document.addEventListener('DOMContentLoaded', function() {
+    checkAuthStatus();
+    
+    // Load preferences after a short delay to ensure user is loaded
+    setTimeout(() => {
+        if (currentUser) {
+            loadAppearanceSettings();
+        }
+    }, 1000);
+});
