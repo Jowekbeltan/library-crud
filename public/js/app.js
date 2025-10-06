@@ -904,29 +904,94 @@ function testNavigation() {
         showSection(section.name);
     });
 }
-
-// Add this to your DOMContentLoaded for testing
-document.addEventListener('DOMContentLoaded', function() {
-    checkAuthStatus();
+// Navigation System
+function showSection(sectionName) {
+    console.log('Showing section:', sectionName);
     
-    // Temporary: Add test button for navigation
-    setTimeout(() => {
-        if (currentUser) {
-            // Add a temporary test button
-            const testButton = document.createElement('button');
-            testButton.textContent = '🔧 Test Navigation';
-            testButton.style.position = 'fixed';
-            testButton.style.top = '10px';
-            testButton.style.right = '10px';
-            testButton.style.zIndex = '10000';
-            testButton.style.background = '#e74c3c';
-            testButton.style.color = 'white';
-            testButton.style.border = 'none';
-            testButton.style.padding = '10px';
-            testButton.style.borderRadius = '5px';
-            testButton.style.cursor = 'pointer';
-            testButton.onclick = testNavigation;
-            document.body.appendChild(testButton);
-        }
-    }, 2000);
-});
+    // Hide all sections
+    document.querySelectorAll('.section').forEach(section => {
+        section.classList.remove('active');
+    });
+    
+    // Remove active class from all buttons
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Show selected section
+    const targetSection = document.getElementById(sectionName + '-section');
+    if (targetSection) {
+        targetSection.classList.add('active');
+    } else {
+        console.error('Section not found:', sectionName + '-section');
+        return;
+    }
+    
+    // Activate the clicked button
+    if (event && event.target) {
+        event.target.classList.add('active');
+    }
+    
+    // Load data for the section
+    loadSectionData(sectionName);
+}
+
+// Load data based on section
+function loadSectionData(section) {
+    console.log('Loading data for section:', section);
+    
+    if (!currentUser) {
+        console.log('No user logged in, skipping data load');
+        return;
+    }
+    
+    switch(section) {
+        case 'dashboard':
+            loadDashboard();
+            break;
+        case 'books':
+            loadBooks();
+            break;
+        case 'users':
+            loadUsers();
+            break;
+        case 'loans':
+            loadLoans();
+            break;
+        case 'reservations':
+            loadReservations();
+            break;
+        case 'profile':
+            loadProfile();
+            break;
+        case 'appearance':
+            loadAppearanceSettings();
+            break;
+        default:
+            console.log('Unknown section:', section);
+    }
+}
+
+// Update the toggleAppViews function to set up initial navigation
+function toggleAppViews() {
+    const welcomePage = document.getElementById('welcome-page');
+    const mainApp = document.getElementById('main-app');
+    
+    if (currentUser) {
+        // User is logged in - show main app
+        welcomePage.style.display = 'none';
+        mainApp.style.display = 'block';
+        updateUIForAuth();
+        
+        // Set up initial navigation - show dashboard by default
+        setTimeout(() => {
+            showSection('dashboard');
+        }, 100);
+    } else {
+        // User is not logged in - show welcome page
+        welcomePage.style.display = 'flex';
+        mainApp.style.display = 'none';
+    }
+}
+
+
