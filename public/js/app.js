@@ -1,327 +1,9 @@
-// Library Management System with Fixed Authentication
-
-// Data Storage with User Accounts
-let libraryData = {
-    users: [
-        { 
-            id: 1, 
-            name: 'Lib', 
-            email: 'adm', 
-            password: 'admin', 
-            role: 'admin',
-            phone: '555-0001', 
-            joined: '2024-01-01',
-            profilePicture: null
-        },
-        { 
-            id: 2, 
-            name: 'Library Admin', 
-            email: 'admin@library.com', 
-            password: 'admin123', 
-            role: 'admin',
-            phone: '555-0002', 
-            joined: '2024-02-01',
-            profilePicture: null
-        },
-        { 
-            id: 3, 
-            name: 'Librarian User', 
-            email: 'librarian@library.com', 
-            password: 'lib123', 
-            role: 'librarian',
-            phone: '555-0003', 
-            joined: '2024-03-01',
-            profilePicture: null
-        },
-        { 
-            id: 4, 
-            name: 'Regular User', 
-            email: 'user@library.com', 
-            password: 'user123', 
-            role: 'user',
-            phone: '555-0004', 
-            joined: '2024-03-01',
-            profilePicture: null
-        }
-    ],
-    books: [
-        { id: 1, title: 'The Great Gatsby', author: 'F. Scott Fitzgerald', isbn: '9780743273565', status: 'available', addedBy: 1 },
-        { id: 2, title: 'To Kill a Mockingbird', author: 'Harper Lee', isbn: '9780061120084', status: 'available', addedBy: 1 },
-        { id: 3, title: '1984', author: 'George Orwell', isbn: '9780451524935', status: 'borrowed', addedBy: 2 },
-        { id: 4, title: 'Pride and Prejudice', author: 'Jane Austen', isbn: '9780141439518', status: 'available', addedBy: 2 },
-        { id: 5, title: 'The Catcher in the Rye', author: 'J.D. Salinger', isbn: '9780316769174', status: 'available', addedBy: 1 }
-    ],
-    loans: [
-        { 
-            id: 1, 
-            bookId: 3, 
-            userId: 4, 
-            bookTitle: '1984', 
-            userName: 'Regular User', 
-            loanDate: '2024-03-01', 
-            dueDate: '2024-03-15', 
-            status: 'active',
-            processedBy: 2
-        }
-    ],
-    reservations: [
-        { 
-            id: 1, 
-            bookId: 5, 
-            userId: 4, 
-            bookTitle: 'The Catcher in the Rye', 
-            userName: 'Regular User', 
-            reservationDate: '2024-03-12', 
-            status: 'active',
-            processedBy: 2
-        }
-    ]
-};
-
-// Authentication State
+// Authentication state
 let currentUser = null;
-let isLoggedIn = false;
+let authToken = null;
 
-// Initialize Application
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Library Management System initialized!');
-    console.log('Available users:', libraryData.users.map(u => ({ email: u.email, password: u.password })));
-    checkAuthStatus();
-    setupEventListeners();
-});
-
-// Authentication Functions
-function checkAuthStatus() {
-    const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
-        try {
-            currentUser = JSON.parse(savedUser);
-            isLoggedIn = true;
-            updateUIForAuth();
-            loadDashboard();
-            console.log('Auto-login successful for:', currentUser.email);
-        } catch (error) {
-            console.error('Error parsing saved user:', error);
-            localStorage.removeItem('currentUser');
-            showLogin();
-        }
-    } else {
-        console.log('No saved user found, showing login');
-        showLogin();
-    }
-}
-
-function login(email, password) {
-    console.log('Login attempt:', { email, password });
-    
-    // Trim and validate inputs
-    email = email.trim().toLowerCase();
-    password = password.trim();
-    
-    if (!email || !password) {
-        showNotification('Please enter both email and password!', 'error');
-        return false;
-    }
-    
-    const user = libraryData.users.find(u => 
-        u.email.toLowerCase() === email && u.password === password
-    );
-    
-    if (user) {
-        currentUser = { ...user };
-        isLoggedIn = true;
-        
-        // Don't store password in localStorage for security
-        const userForStorage = { ...user };
-        delete userForStorage.password;
-        
-        localStorage.setItem('currentUser', JSON.stringify(userForStorage));
-        updateUIForAuth();
-        closeLoginModal();
-        loadDashboard();
-        
-        showNotification(`Welcome back, ${user.name}!`, 'success');
-        console.log('Login successful for:', user.email);
-        return true;
-    } else {
-        console.log('Login failed - no user found with these credentials');
-        showNotification('Invalid email or password! Please try again.', 'error');
-        return false;
-    }
-}
-
-function signup(name, email, password, role) {
-    // Validate inputs
-    name = name.trim();
-    email = email.trim().toLowerCase();
-    password = password.trim();
-    
-    if (!name || !email || !password) {
-        showNotification('Please fill in all fields!', 'error');
-        return false;
-    }
-    
-    if (password.length < 6) {
-        showNotification('Password must be at least 6 characters long!', 'error');
-        return;
-    }
-    
-    // Check if email already exists
-    if (libraryData.users.find(u => u.email.toLowerCase() === email)) {
-        showNotification('Email already registered! Please use a different email.', 'error');
-        return false;
-    }
-    
-    const newUser = {
-        id: Math.max(...libraryData.users.map(u => u.id)) + 1,
-        name,
-        email,
-        password,
-        role: role || 'user',
-        phone: '',
-        joined: new Date().toISOString().split('T')[0],
-        profilePicture: null
-    };
-    
-    libraryData.users.push(newUser);
-    
-    // Auto-login after signup
-    currentUser = { ...newUser };
-    isLoggedIn = true;
-    
-    const userForStorage = { ...newUser };
-    delete userForStorage.password;
-    
-    localStorage.setItem('currentUser', JSON.stringify(userForStorage));
-    updateUIForAuth();
-    closeSignupModal();
-    loadDashboard();
-    
-    showNotification(`Account created successfully! Welcome, ${name}!`, 'success');
-    console.log('New user created:', newUser.email);
-    return true;
-}
-
-function logout() {
-    if (confirm('Are you sure you want to logout?')) {
-        currentUser = null;
-        isLoggedIn = false;
-        localStorage.removeItem('currentUser');
-        updateUIForAuth();
-        showLogin();
-        showNotification('You have been logged out successfully!', 'info');
-        console.log('User logged out');
-    }
-}
-
-function updateUIForAuth() {
-    const userInfo = document.getElementById('user-info');
-    const guestInfo = document.getElementById('guest-info');
-    const nav = document.querySelector('nav');
-    
-    if (isLoggedIn && currentUser) {
-        userInfo.style.display = 'flex';
-        guestInfo.style.display = 'none';
-        nav.style.display = 'flex';
-        document.getElementById('user-name').textContent = currentUser.name;
-        
-        // Add role-based class to body
-        document.body.className = `logged-in role-${currentUser.role}`;
-        
-        console.log('UI updated for logged-in user:', currentUser.email);
-        
-    } else {
-        userInfo.style.display = 'none';
-        guestInfo.style.display = 'block';
-        nav.style.display = 'none';
-        document.body.className = '';
-        
-        console.log('UI updated for guest user');
-    }
-}
-
-// Modal Functions
-function showLogin() {
-    document.getElementById('loginModal').style.display = 'block';
-    console.log('Login modal shown');
-}
-
-function showSignup() {
-    document.getElementById('loginModal').style.display = 'none';
-    document.getElementById('signupModal').style.display = 'block';
-    console.log('Signup modal shown');
-}
-
-function closeLoginModal() {
-    document.getElementById('loginModal').style.display = 'none';
-    console.log('Login modal closed');
-}
-
-function closeSignupModal() {
-    document.getElementById('signupModal').style.display = 'none';
-    console.log('Signup modal closed');
-}
-
-function fillDemoCredentials(email, password) {
-    document.getElementById('login-email').value = email;
-    document.getElementById('login-password').value = password;
-    console.log('Demo credentials filled:', email);
-}
-
-// Event Listeners Setup
-function setupEventListeners() {
-    // Login form
-    document.getElementById('login-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const email = document.getElementById('login-email').value;
-        const password = document.getElementById('login-password').value;
-        login(email, password);
-    });
-    
-    // Signup form
-    document.getElementById('signup-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const name = document.getElementById('signup-name').value;
-        const email = document.getElementById('signup-email').value;
-        const password = document.getElementById('signup-password').value;
-        const role = document.getElementById('signup-role').value;
-        
-        signup(name, email, password, role);
-    });
-    
-    // Modal close events
-    document.querySelectorAll('.close').forEach(closeBtn => {
-        closeBtn.addEventListener('click', function() {
-            closeLoginModal();
-            closeSignupModal();
-        });
-    });
-    
-    // Close modals when clicking outside
-    window.addEventListener('click', function(e) {
-        if (e.target.classList.contains('modal')) {
-            closeLoginModal();
-            closeSignupModal();
-        }
-    });
-    
-    // Profile picture upload
-    const profilePictureInput = document.getElementById('profile-picture-input');
-    if (profilePictureInput) {
-        profilePictureInput.addEventListener('change', handleProfilePictureUpload);
-    }
-    
-    console.log('All event listeners set up successfully');
-}
-
-// Navigation System
-function showSection(sectionId) {
-    if (!isLoggedIn) {
-        showNotification('Please login to access this section!', 'error');
-        showLogin();
-        return;
-    }
-    
+// Navigation
+function showSection(sectionName) {
     // Hide all sections
     document.querySelectorAll('.section').forEach(section => {
         section.classList.remove('active');
@@ -332,262 +14,645 @@ function showSection(sectionId) {
         btn.classList.remove('active');
     });
     
-    // Show selected section
-    const targetSection = document.getElementById(sectionId);
-    if (targetSection) {
-        targetSection.classList.add('active');
-    }
+    // Show selected section and activate button
+    document.getElementById(sectionName + '-section').classList.add('active');
+    event.target.classList.add('active');
     
-    // Activate corresponding nav button
-    const buttonMap = {
-        'dashboard-section': '📊 Dashboard',
-        'books-section': '📚 Books',
-        'users-section': '👥 Users',
-        'loans-section': '📖 Loans',
-        'reservations-section': '📅 Reservations',
-        'profile-section': '👤 Profile',
-        'database-section': '📊 Database'
-    };
-    
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        if (btn.textContent === buttonMap[sectionId]) {
-            btn.classList.add('active');
-        }
-    });
-    
-    // Load section data
-    loadSectionData(sectionId);
+    // Load data for the section
+    loadSectionData(sectionName);
 }
 
-function loadSectionData(sectionId) {
-    if (!isLoggedIn) return;
-    
-    switch(sectionId) {
-        case 'dashboard-section':
+// Load data based on section
+function loadSectionData(section) {
+    switch(section) {
+        case 'dashboard':
             loadDashboard();
             break;
-        case 'books-section':
+        case 'books':
             loadBooks();
             break;
-        case 'users-section':
+        case 'users':
             loadUsers();
             break;
-        case 'loans-section':
+        case 'loans':
             loadLoans();
             break;
-        case 'reservations-section':
+        case 'reservations':
             loadReservations();
             break;
-        case 'profile-section':
+        case 'profile':
             loadProfile();
-            break;
-        case 'database-section':
-            loadDatabaseView();
             break;
     }
 }
 
-// Basic Dashboard Function (You can expand this)
-function loadDashboard() {
-    console.log('Loading dashboard for user:', currentUser.email);
-    // Add your dashboard loading logic here
-    showNotification('Dashboard loaded successfully!', 'success');
+// Authentication functions
+async function login(email, password) {
+    try {
+        const response = await fetch('/auth/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email, password })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            authToken = data.token;
+            currentUser = data.user;
+            localStorage.setItem('authToken', authToken);
+            localStorage.setItem('user', JSON.stringify(currentUser));
+            updateUIForAuth();
+            closeModals();
+            loadDashboard();
+        } else {
+            alert(data.error);
+        }
+    } catch (error) {
+        console.error('Login error:', error);
+        alert('Login failed');
+    }
 }
 
-// Basic Profile Function
-function loadProfile() {
-    if (!currentUser) return;
-    
-    console.log('Loading profile for user:', currentUser.email);
-    
-    // Update profile display
-    document.getElementById('profile-name').textContent = currentUser.name;
-    document.getElementById('profile-username').textContent = '@' + (currentUser.username || currentUser.name.toLowerCase().replace(/\s+/g, ''));
-    document.getElementById('profile-email').textContent = currentUser.email;
-    
-    // Update form fields
-    document.getElementById('edit-name').value = currentUser.name;
-    document.getElementById('edit-username').value = currentUser.username || currentUser.name.toLowerCase().replace(/\s+/g, '');
-    document.getElementById('edit-email').value = currentUser.email;
-    
-    showNotification('Profile loaded successfully!', 'success');
+async function signup(name, email, password) {
+    try {
+        const response = await fetch('/auth/signup', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name, email, password })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            alert('Account created successfully! Please login.');
+            showLogin();
+        } else {
+            alert(data.error);
+        }
+    } catch (error) {
+        console.error('Signup error:', error);
+        alert('Signup failed');
+    }
 }
 
-// Profile Form Handler
-document.getElementById('edit-profile-form').addEventListener('submit', function(e) {
-    e.preventDefault();
+function checkAuthStatus() {
+    const savedToken = localStorage.getItem('authToken');
+    const savedUser = localStorage.getItem('user');
     
-    const name = document.getElementById('edit-name').value.trim();
-    const username = document.getElementById('edit-username').value.trim();
-    
-    if (!name) {
-        showNotification('Please enter your name', 'error');
+    if (savedToken && savedUser) {
+        authToken = savedToken;
+        currentUser = JSON.parse(savedUser);
+        updateUIForAuth();
+        loadDashboard();
+    } else {
+        showLogin();
+    }
+}
+
+function updateUIForAuth() {
+    if (currentUser) {
+        document.getElementById('user-name').textContent = currentUser.name;
+        document.getElementById('user-info').style.display = 'block';
+        document.querySelector('nav').style.display = 'flex';
+    } else {
+        document.getElementById('user-info').style.display = 'none';
+        document.querySelector('nav').style.display = 'none';
+    }
+}
+
+function logout() {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
+    authToken = null;
+    currentUser = null;
+    updateUIForAuth();
+    showLogin();
+}
+
+// Modal functions
+function showLogin() {
+    document.getElementById('loginModal').style.display = 'block';
+}
+
+function showSignup() {
+    document.getElementById('loginModal').style.display = 'none';
+    document.getElementById('signupModal').style.display = 'block';
+}
+
+function closeModals() {
+    document.getElementById('loginModal').style.display = 'none';
+    document.getElementById('signupModal').style.display = 'none';
+}
+
+// Authentication headers
+function getAuthHeaders() {
+    if (!authToken) {
+        console.warn('No auth token available');
+        return {
+            'Content-Type': 'application/json'
+        };
+    }
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+    };
+}
+
+// Dashboard Functions - SINGLE VERSION
+async function loadDashboard() {
+    if (!authToken) {
+        console.log('No auth token - user not logged in');
+        showLogin();
         return;
     }
     
-    // Update current user data
-    currentUser.name = name;
-    currentUser.username = username;
+    console.log('Loading dashboard...');
     
-    // Update in libraryData
-    const userIndex = libraryData.users.findIndex(u => u.id === currentUser.id);
-    if (userIndex !== -1) {
-        libraryData.users[userIndex].name = name;
-        libraryData.users[userIndex].username = username;
+    try {
+        // Load all data
+        const [books, users, loans, reservations] = await Promise.all([
+            fetch('/books', { headers: getAuthHeaders() }).then(r => r.json()),
+            fetch('/users', { headers: getAuthHeaders() }).then(r => r.json()),
+            fetch('/loans', { headers: getAuthHeaders() }).then(r => r.json()),
+            fetch('/reservations', { headers: getAuthHeaders() }).then(r => r.json())
+        ]);
+        
+        console.log('Dashboard data loaded:', { 
+            books: books.length, 
+            users: users.length, 
+            loans: loans.length, 
+            reservations: reservations.length 
+        });
+        
+        updateDashboardStats(books, users, loans, reservations);
+        displayAvailableBooks(books);
+        displayRecentReservations(reservations);
+        displayRecentUsers(users);
+        
+    } catch (error) {
+        console.error('Error loading dashboard:', error);
+        document.getElementById('available-books-list').innerHTML = 
+            `<p class="mini-card" style="color: red;">Error: ${error.message}</p>`;
+    }
+}
+
+function updateDashboardStats(books, users, loans, reservations) {
+    const totalBooks = books.length;
+    const availableBooks = books.filter(book => book.status === 'available').length;
+    const borrowedBooks = books.filter(book => book.status === 'borrowed').length;
+    const totalUsers = users.length;
+    const activeLoans = loans.filter(loan => loan.status === 'active').length;
+    const totalReservations = reservations.length;
+    
+    document.getElementById('total-books').textContent = totalBooks;
+    document.getElementById('available-books').textContent = availableBooks;
+    document.getElementById('borrowed-books').textContent = borrowedBooks;
+    document.getElementById('total-users').textContent = totalUsers;
+    document.getElementById('active-loans').textContent = activeLoans;
+    document.getElementById('total-reservations').textContent = totalReservations;
+}
+
+function displayAvailableBooks(books) {
+    const container = document.getElementById('available-books-list');
+    const availableBooks = books
+        .filter(book => book.status === 'available')
+        .slice(0, 50);
+    
+    if (availableBooks.length === 0) {
+        container.innerHTML = '<p class="mini-card">No available books</p>';
+        return;
     }
     
-    // Update localStorage
-    const userForStorage = { ...currentUser };
-    delete userForStorage.password;
-    localStorage.setItem('currentUser', JSON.stringify(userForStorage));
+    container.innerHTML = availableBooks.map(book => `
+        <div class="mini-card">
+            <h4>${book.title}</h4>
+            <p><strong>Author:</strong> ${book.author}</p>
+            <p><strong>ISBN:</strong> ${book.isbn || 'N/A'}</p>
+            <span class="status-badge status-available">Available</span>
+        </div>
+    `).join('');
+}
+
+function displayRecentReservations(reservations) {
+    const container = document.getElementById('reservations-list');
+    const recentReservations = reservations.slice(0, 10);
     
-    // Update UI
-    updateUIForAuth();
-    showNotification('Profile updated successfully!', 'success');
+    if (recentReservations.length === 0) {
+        container.innerHTML = '<p class="mini-card">No reservations</p>';
+        return;
+    }
+    
+    container.innerHTML = recentReservations.map(reservation => `
+        <div class="mini-card">
+            <h4>${reservation.book}</h4>
+            <p><strong>User:</strong> ${reservation.user}</p>
+            <p><strong>Date:</strong> ${new Date(reservation.reservation_date).toLocaleDateString()}</p>
+            <span class="status-badge status-reserved">${reservation.status}</span>
+        </div>
+    `).join('');
+}
+
+function displayRecentUsers(users) {
+    const container = document.getElementById('recent-users-list');
+    const recentUsers = users
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        .slice(0, 10);
+    
+    if (recentUsers.length === 0) {
+        container.innerHTML = '<p class="mini-card">No users</p>';
+        return;
+    }
+    
+    container.innerHTML = recentUsers.map(user => `
+        <div class="mini-card">
+            <h4>${user.name}</h4>
+            <p><strong>Email:</strong> ${user.email}</p>
+            <p><strong>Joined:</strong> ${new Date(user.created_at).toLocaleDateString()}</p>
+        </div>
+    `).join('');
+}
+
+// Books Management - SINGLE VERSION
+async function loadBooks() {
+    if (!authToken) {
+        console.log('Not authenticated, skipping books load');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/books', {
+            headers: getAuthHeaders()
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Failed to load books: ${response.status}`);
+        }
+        
+        const books = await response.json();
+        
+        const booksList = document.getElementById('books-list');
+        const booksCount = document.getElementById('books-count');
+        
+        booksCount.textContent = books.length;
+        booksList.innerHTML = '';
+        
+        books.forEach(book => {
+            booksList.innerHTML += `
+                <div class="card">
+                    <h4>${book.title}</h4>
+                    <p><strong>Author:</strong> ${book.author}</p>
+                    <p><strong>ISBN:</strong> ${book.isbn || 'N/A'}</p>
+                    <p><strong>Status:</strong> 
+                        <span class="status-${book.status}">${book.status}</span>
+                    </p>
+                    <p><strong>Added:</strong> ${new Date(book.created_at).toLocaleDateString()}</p>
+                    <div class="card-actions">
+                        <button class="delete" onclick="deleteBook(${book.id})">Delete</button>
+                    </div>
+                </div>
+            `;
+        });
+    } catch (error) {
+        console.error('Error loading books:', error);
+    }
+}
+
+// Add Book Form Handler - FIXED VERSION
+document.getElementById('add-book-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const title = document.getElementById('title').value.trim();
+    const author = document.getElementById('author').value.trim();
+    const isbn = document.getElementById('isbn').value.trim();
+    
+    if (!title || !author) {
+        alert('Please enter both title and author');
+        return;
+    }
+    
+    console.log('Adding book:', { title, author, isbn });
+    
+    try {
+        const response = await fetch('/books', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
+                title: title,
+                author: author,
+                isbn: isbn || null
+            })
+        });
+        
+        const result = await response.json();
+        console.log('Server response:', result);
+        
+        if (response.ok) {
+            document.getElementById('add-book-form').reset();
+            alert('Book added successfully!');
+            loadBooks(); // Reload the books list
+        } else {
+            alert('Error adding book: ' + (result.error || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Network error:', error);
+        alert('Network error: Could not connect to server');
+    }
 });
 
-// Profile Picture Management
+// Delete Book
+async function deleteBook(bookId) {
+    if (confirm('Are you sure you want to delete this book?')) {
+        try {
+            const response = await fetch(`/books/${bookId}`, {
+                method: 'DELETE',
+                headers: getAuthHeaders()
+            });
+            
+            if (response.ok) {
+                loadBooks();
+            } else {
+                alert('Error deleting book');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error deleting book');
+        }
+    }
+}
+
+// Users Management
+async function loadUsers() {
+    try {
+        const response = await fetch('/users', {
+            headers: getAuthHeaders()
+        });
+        const users = await response.json();
+        
+        const usersList = document.getElementById('users-list');
+        usersList.innerHTML = '';
+        
+        users.forEach(user => {
+            usersList.innerHTML += `
+                <div class="card">
+                    <h4>${user.name}</h4>
+                    <p><strong>Email:</strong> ${user.email}</p>
+                    <p><strong>Member since:</strong> ${new Date(user.created_at).toLocaleDateString()}</p>
+                </div>
+            `;
+        });
+    } catch (error) {
+        console.error('Error loading users:', error);
+    }
+}
+
+// Loans Management
+async function loadLoans() {
+    try {
+        const response = await fetch('/loans', {
+            headers: getAuthHeaders()
+        });
+        const loans = await response.json();
+        
+        const loansList = document.getElementById('loans-list');
+        loansList.innerHTML = '';
+        
+        loans.forEach(loan => {
+            loansList.innerHTML += `
+                <div class="card">
+                    <h4>${loan.book} - ${loan.user}</h4>
+                    <p><strong>Loan Date:</strong> ${new Date(loan.loan_date).toLocaleDateString()}</p>
+                    <p><strong>Due Date:</strong> ${new Date(loan.due_date).toLocaleDateString()}</p>
+                    <p><strong>Status:</strong> ${loan.status}</p>
+                    ${loan.return_date ? 
+                        `<p><strong>Returned:</strong> ${new Date(loan.return_date).toLocaleDateString()}</p>` : 
+                        `<button onclick="returnBook(${loan.id})">Mark Returned</button>`
+                    }
+                </div>
+            `;
+        });
+    } catch (error) {
+        console.error('Error loading loans:', error);
+    }
+}
+
+// Reservations Management
+async function loadReservations() {
+    try {
+        const response = await fetch('/reservations', {
+            headers: getAuthHeaders()
+        });
+        const reservations = await response.json();
+        
+        const reservationsList = document.getElementById('reservations-list');
+        reservationsList.innerHTML = '';
+        
+        reservations.forEach(reservation => {
+            reservationsList.innerHTML += `
+                <div class="card">
+                    <h4>${reservation.book} - ${reservation.user}</h4>
+                    <p><strong>Reservation Date:</strong> ${new Date(reservation.reservation_date).toLocaleDateString()}</p>
+                    <p><strong>Status:</strong> ${reservation.status}</p>
+                </div>
+            `;
+        });
+    } catch (error) {
+        console.error('Error loading reservations:', error);
+    }
+}
+
+// Return Book Function
+async function returnBook(loanId) {
+    try {
+        const response = await fetch(`/loans/${loanId}/return`, {
+            method: 'PUT',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
+                return_date: new Date().toISOString().split('T')[0]
+            })
+        });
+        
+        if (response.ok) {
+            loadLoans();
+        }
+    } catch (error) {
+        console.error('Error returning book:', error);
+    }
+}
+
+// Profile Functions
+async function loadProfile() {
+    if (!currentUser) return;
+    
+    try {
+        document.getElementById('profile-name').textContent = currentUser.name;
+        document.getElementById('profile-email').textContent = currentUser.email;
+        document.getElementById('member-since').textContent = 'Recently';
+        
+        const [loans, reservations] = await Promise.all([
+            fetch('/loans', { headers: getAuthHeaders() }).then(r => r.json()),
+            fetch('/reservations', { headers: getAuthHeaders() }).then(r => r.json())
+        ]);
+        
+        const userLoans = loans.filter(loan => loan.user === currentUser.name);
+        const userReservations = reservations.filter(res => res.user === currentUser.name);
+        const activeReservations = userReservations.filter(res => res.status === 'active');
+        
+        document.getElementById('books-borrowed').textContent = userLoans.length;
+        document.getElementById('active-reservations').textContent = activeReservations.length;
+        
+        displayUserActivity(userLoans, userReservations);
+        
+    } catch (error) {
+        console.error('Error loading profile:', error);
+    }
+}
+
+function displayUserActivity(loans, reservations) {
+    const activityContainer = document.getElementById('user-activity');
+    
+    const activities = [
+        ...loans.map(loan => ({
+            type: 'loan',
+            title: `Borrowed "${loan.book}"`,
+            date: loan.loan_date,
+            recent: isRecent(loan.loan_date)
+        })),
+        ...reservations.map(res => ({
+            type: 'reservation', 
+            title: `Reserved "${res.book}"`,
+            date: res.reservation_date,
+            recent: isRecent(res.reservation_date)
+        }))
+    ].sort((a, b) => new Date(b.date) - new Date(a.date))
+     .slice(0, 10);
+    
+    if (activities.length === 0) {
+        activityContainer.innerHTML = '<p>No recent activity</p>';
+        return;
+    }
+    
+    activityContainer.innerHTML = activities.map(activity => `
+        <div class="activity-item ${activity.recent ? 'recent' : 'old'}">
+            <h4>${activity.title}</h4>
+            <p>${new Date(activity.date).toLocaleDateString()} • ${activity.type === 'loan' ? '📖 Loan' : '📅 Reservation'}</p>
+        </div>
+    `).join('');
+}
+
+function isRecent(dateString) {
+    const activityDate = new Date(dateString);
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    return activityDate > sevenDaysAgo;
+}
+
+function changePassword() {
+    alert('Password change feature coming soon!');
+}
+
+// Search functionality
+async function searchBooks(query) {
+    try {
+        const response = await fetch(`/books/search?q=${encodeURIComponent(query)}`, {
+            headers: getAuthHeaders()
+        });
+        
+        if (response.ok) {
+            const books = await response.json();
+            // You'll need to implement displaySearchResults function
+            console.log('Search results:', books);
+        }
+    } catch (error) {
+        console.error('Search error:', error);
+    }
+}
+
+// Event listeners
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    await login(email, password);
+});
+
+document.getElementById('signup-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('signup-name').value;
+    const email = document.getElementById('signup-email').value;
+    const password = document.getElementById('signup-password').value;
+    await signup(name, email, password);
+});
+
+document.querySelectorAll('.close').forEach(closeBtn => {
+    closeBtn.addEventListener('click', closeModals);
+});
+
+window.addEventListener('click', (e) => {
+    if (e.target.classList.contains('modal')) {
+        closeModals();
+    }
+});
+
+// Initialize app
+document.addEventListener('DOMContentLoaded', function() {
+    checkAuthStatus();
+});
+// Profile Section Functionality
 function handleProfilePictureUpload(event) {
     const file = event.target.files[0];
     if (file) {
-        // Validate file type
-        if (!file.type.startsWith('image/')) {
-            showNotification('Please select an image file', 'error');
-            return;
-        }
-        
-        // Validate file size (max 5MB)
-        if (file.size > 5 * 1024 * 1024) {
-            showNotification('Image must be less than 5MB', 'error');
-            return;
-        }
-        
         const reader = new FileReader();
         reader.onload = function(e) {
             document.getElementById('profile-picture').src = e.target.result;
-            // Save to localStorage
+            // Save to localStorage or send to server
             localStorage.setItem('profilePicture', e.target.result);
-            showNotification('Profile picture updated successfully!', 'success');
         };
         reader.readAsDataURL(file);
     }
 }
 
 function removeProfilePicture() {
-    if (confirm('Are you sure you want to remove your profile picture?')) {
-        const defaultAvatar = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'120\' height=\'120\' viewBox=\'0 0 120 120\'%3E%3Ccircle cx=\'60\' cy=\'60\' r=\'60\' fill=\'%233498db\'/%3E%3Ccircle cx=\'60\' cy=\'45\' r=\'25\' fill=\'white\'/%3E%3Cpath d=\'M30 120 Q60 90 90 120 Z\' fill=\'white\'/%3E%3C/svg%3E';
-        document.getElementById('profile-picture').src = defaultAvatar;
-        localStorage.removeItem('profilePicture');
-        document.getElementById('profile-picture-input').value = '';
-        showNotification('Profile picture removed successfully!', 'success');
-    }
+    const defaultAvatar = '/images/default-avatar.png';
+    document.getElementById('profile-picture').src = defaultAvatar;
+    localStorage.removeItem('profilePicture');
+    // Reset file input
+    document.getElementById('profile-picture-input').value = '';
 }
 
-// Utility Functions
-function showNotification(message, type = 'info') {
-    // Remove existing notifications
-    document.querySelectorAll('.notification').forEach(notification => {
-        notification.remove();
+// Initialize profile form
+document.addEventListener('DOMContentLoaded', function() {
+    // Load profile picture from localStorage
+    const savedPicture = localStorage.getItem('profilePicture');
+    if (savedPicture) {
+        document.getElementById('profile-picture').src = savedPicture;
+    }
+    
+    // Handle profile picture upload
+    document.getElementById('profile-picture-input').addEventListener('change', handleProfilePictureUpload);
+    
+    // Handle profile form submission
+    document.getElementById('edit-profile-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        saveProfileChanges();
     });
+});
+
+function saveProfileChanges() {
+    const name = document.getElementById('edit-name').value;
+    const username = document.getElementById('edit-username').value;
     
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.textContent = message;
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 15px 20px;
-        border-radius: 8px;
-        color: white;
-        font-weight: bold;
-        z-index: 1000;
-        animation: slideIn 0.3s ease;
-        max-width: 300px;
-    `;
+    // Update profile display
+    document.getElementById('profile-name').textContent = name;
+    document.getElementById('profile-username').textContent = '@' + username;
     
-    // Set background color based on type
-    const colors = {
-        success: '#27ae60',
-        error: '#e74c3c',
-        info: '#3498db',
-        warning: '#f39c12'
-    };
-    notification.style.background = colors[type] || colors.info;
+    // Show success message
+    alert('Profile updated successfully!');
     
-    document.body.appendChild(notification);
-    
-    // Remove after 4 seconds
-    setTimeout(() => {
-        notification.style.animation = 'slideOut 0.3s ease';
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.parentNode.removeChild(notification);
-            }
-        }, 300);
-    }, 4000);
+    // In a real app, you would send this to your backend
+    console.log('Profile saved:', { name, username });
 }
-
-// Add CSS for notifications
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideIn {
-        from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
-    @keyframes slideOut {
-        from { transform: translateX(0); opacity: 1; }
-        to { transform: translateX(100%); opacity: 0; }
-    }
-    
-    .role-admin .stat-card { border-left: 4px solid #e74c3c; }
-    .role-librarian .stat-card { border-left: 4px solid #f39c12; }
-    .role-user .stat-card { border-left: 4px solid #27ae60; }
-    
-    /* Debug info styles */
-    .debug-info {
-        position: fixed;
-        bottom: 10px;
-        left: 10px;
-        background: rgba(0,0,0,0.8);
-        color: white;
-        padding: 10px;
-        border-radius: 5px;
-        font-size: 12px;
-        z-index: 9999;
-    }
-`;
-document.head.appendChild(style);
-
-// Debug function to show current state
-function showDebugInfo() {
-    const debugDiv = document.createElement('div');
-    debugDiv.className = 'debug-info';
-    debugDiv.innerHTML = `
-        <strong>Debug Info:</strong><br>
-        Logged in: ${isLoggedIn}<br>
-        User: ${currentUser ? currentUser.email : 'None'}<br>
-        Users in system: ${libraryData.users.length}
-    `;
-    document.body.appendChild(debugDiv);
-}
-
-// Make functions globally available
-window.showSection = showSection;
-window.showLogin = showLogin;
-window.showSignup = showSignup;
-window.closeLoginModal = closeLoginModal;
-window.closeSignupModal = closeSignupModal;
-window.fillDemoCredentials = fillDemoCredentials;
-window.logout = logout;
-window.removeProfilePicture = removeProfilePicture;
-
-// Show debug info (remove in production)
-// showDebugInfo();
-
-console.log('Available login credentials:');
-console.log('1. Email: adm, Password: admin (Your account)');
-console.log('2. Email: admin@library.com, Password: admin123');
-console.log('3. Email: librarian@library.com, Password: lib123');
-console.log('4. Email: user@library.com, Password: user123');
