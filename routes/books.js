@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { uploadBookCover } = require('../middleware/upload');
+const upload = require('../middleware/upload');
 
 // GET all books with filtering
 router.get('/', (req, res) => {
@@ -79,7 +79,7 @@ router.get('/years', (req, res) => {
 });
 
 // CREATE Book with enhanced fields
-router.post('/', uploadBookCover.single('cover_image'), (req, res) => {
+router.post('/', upload.single('cover_image'), (req, res) => {
     const { title, author, category, genre, published_year, isbn, tags } = req.body;
     
     // Validation
