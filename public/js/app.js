@@ -885,3 +885,48 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }, 1000);
 });
+// Temporary: Manual navigation test
+function testNavigation() {
+    console.log('=== NAVIGATION TEST ===');
+    
+    // Test clicking each section manually
+    const sections = [
+        { name: 'books', button: 'Books' },
+        { name: 'users', button: 'Users' },
+        { name: 'loans', button: 'Loans' },
+        { name: 'reservations', button: 'Reservations' },
+        { name: 'profile', button: 'Profile' },
+        { name: 'appearance', button: 'Appearance' }
+    ];
+    
+    sections.forEach(section => {
+        console.log(`Testing: ${section.name}`);
+        showSection(section.name);
+    });
+}
+
+// Add this to your DOMContentLoaded for testing
+document.addEventListener('DOMContentLoaded', function() {
+    checkAuthStatus();
+    
+    // Temporary: Add test button for navigation
+    setTimeout(() => {
+        if (currentUser) {
+            // Add a temporary test button
+            const testButton = document.createElement('button');
+            testButton.textContent = '🔧 Test Navigation';
+            testButton.style.position = 'fixed';
+            testButton.style.top = '10px';
+            testButton.style.right = '10px';
+            testButton.style.zIndex = '10000';
+            testButton.style.background = '#e74c3c';
+            testButton.style.color = 'white';
+            testButton.style.border = 'none';
+            testButton.style.padding = '10px';
+            testButton.style.borderRadius = '5px';
+            testButton.style.cursor = 'pointer';
+            testButton.onclick = testNavigation;
+            document.body.appendChild(testButton);
+        }
+    }, 2000);
+});
