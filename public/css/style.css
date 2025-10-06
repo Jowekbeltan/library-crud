@@ -1096,3 +1096,203 @@ body.dark-theme button {
         grid-template-columns: repeat(2, 1fr);
     }
 }
+/* Welcome/Landing Page Styles */
+.welcome-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.welcome-content {
+    background: white;
+    border-radius: 20px;
+    padding: 50px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+    max-width: 900px;
+    width: 100%;
+    text-align: center;
+}
+
+.welcome-header h1 {
+    color: #2c3e50;
+    font-size: 3em;
+    margin-bottom: 10px;
+}
+
+.welcome-subtitle {
+    color: #7f8c8d;
+    font-size: 1.3em;
+    margin-bottom: 40px;
+}
+
+.welcome-features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 25px;
+    margin: 40px 0;
+}
+
+.feature-card {
+    background: #f8f9fa;
+    padding: 25px;
+    border-radius: 12px;
+    border-left: 4px solid #3498db;
+    transition: transform 0.3s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+}
+
+.feature-icon {
+    font-size: 2.5em;
+    margin-bottom: 15px;
+}
+
+.feature-card h3 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+}
+
+.feature-card p {
+    color: #7f8c8d;
+    margin: 0;
+}
+
+.auth-options {
+    margin-top: 40px;
+    padding-top: 30px;
+    border-top: 2px solid #f8f9fa;
+}
+
+.auth-options h2 {
+    color: #2c3e50;
+    margin-bottom: 20px;
+}
+
+.auth-buttons {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.auth-btn {
+    padding: 15px 30px;
+    border: none;
+    border-radius: 50px;
+    font-size: 1.1em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 150px;
+}
+
+.auth-btn.primary {
+    background: #3498db;
+    color: white;
+}
+
+.auth-btn.primary:hover {
+    background: #2980b9;
+    transform: translateY(-2px);
+}
+
+.auth-btn.secondary {
+    background: #2c3e50;
+    color: white;
+}
+
+.auth-btn.secondary:hover {
+    background: #34495e;
+    transform: translateY(-2px);
+}
+
+.auth-note {
+    color: #7f8c8d;
+    font-size: 0.9em;
+}
+
+/* Modal enhancements for auth */
+.modal-content h2 {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #2c3e50;
+}
+
+.modal-content form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.modal-content input {
+    padding: 12px;
+    border: 2px solid #e1e8ed;
+    border-radius: 8px;
+    font-size: 16px;
+}
+
+.modal-content input:focus {
+    border-color: #3498db;
+    outline: none;
+}
+
+.modal-content button {
+    background: #3498db;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.modal-content button:hover {
+    background: #2980b9;
+}
+
+.modal-content p {
+    text-align: center;
+    margin-top: 20px;
+    color: #7f8c8d;
+}
+
+.modal-content a {
+    color: #3498db;
+    text-decoration: none;
+}
+
+.modal-content a:hover {
+    text-decoration: underline;
+}
+
+/* Responsive design for welcome page */
+@media (max-width: 768px) {
+    .welcome-content {
+        padding: 30px 20px;
+    }
+    
+    .welcome-header h1 {
+        font-size: 2em;
+    }
+    
+    .welcome-features {
+        grid-template-columns: 1fr;
+    }
+    
+    .auth-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .auth-btn {
+        width: 100%;
+        max-width: 250px;
+    }
+}

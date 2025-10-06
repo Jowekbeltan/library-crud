@@ -2,47 +2,35 @@
 let currentUser = null;
 let authToken = null;
 
-// Navigation
-function showSection(sectionName) {
-    // Hide all sections
-    document.querySelectorAll('.section').forEach(section => {
-        section.classList.remove('active');
-    });
+// Show/hide welcome page and main app
+function toggleAppViews() {
+    const welcomePage = document.getElementById('welcome-page');
+    const mainApp = document.getElementById('main-app');
     
-    // Remove active class from all buttons
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    
-    // Show selected section and activate button
-    document.getElementById(sectionName + '-section').classList.add('active');
-    event.target.classList.add('active');
-    
-    // Load data for the section
-    loadSectionData(sectionName);
+    if (currentUser) {
+        // User is logged in - show main app
+        welcomePage.style.display = 'none';
+        mainApp.style.display = 'block';
+        updateUIForAuth();
+        loadDashboard();
+    } else {
+        // User is not logged in - show welcome page
+        welcomePage.style.display = 'flex';
+        mainApp.style.display = 'none';
+    }
 }
 
-// Load data based on section
-function loadSectionData(section) {
-    switch(section) {
-        case 'dashboard':
-            loadDashboard();
-            break;
-        case 'books':
-            loadBooks();
-            break;
-        case 'users':
-            loadUsers();
-            break;
-        case 'loans':
-            loadLoans();
-            break;
-        case 'reservations':
-            loadReservations();
-            break;
-        case 'profile':
-            loadProfile();
-            break;
+// Check if user is logged in on page load
+function checkAuthStatus() {
+    const savedToken = localStorage.getItem('authToken');
+    const savedUser = localStorage.getItem('user');
+    
+    if (savedToken && savedUser) {
+        authToken = savedToken;
+        currentUser = JSON.parse(savedUser);
+        toggleAppViews();
+    } else {
+        toggleAppViews();
     }
 }
 
@@ -64,15 +52,15 @@ async function login(email, password) {
             currentUser = data.user;
             localStorage.setItem('authToken', authToken);
             localStorage.setItem('user', JSON.stringify(currentUser));
-            updateUIForAuth();
             closeModals();
-            loadDashboard();
+            toggleAppViews();
+            showMessage('Welcome back, ' + currentUser.name + '!', 'success');
         } else {
             alert(data.error);
         }
     } catch (error) {
         console.error('Login error:', error);
-        alert('Login failed');
+        alert('Login failed. Please try again.');
     }
 }
 
@@ -89,59 +77,37 @@ async function signup(name, email, password) {
         const data = await response.json();
         
         if (response.ok) {
-            alert('Account created successfully! Please login.');
+            alert('Account created successfully! Please sign in.');
             showLogin();
         } else {
             alert(data.error);
         }
     } catch (error) {
         console.error('Signup error:', error);
-        alert('Signup failed');
-    }
-}
-
-function checkAuthStatus() {
-    const savedToken = localStorage.getItem('authToken');
-    const savedUser = localStorage.getItem('user');
-    
-    if (savedToken && savedUser) {
-        authToken = savedToken;
-        currentUser = JSON.parse(savedUser);
-        updateUIForAuth();
-        loadDashboard();
-    } else {
-        showLogin();
-    }
-}
-
-function updateUIForAuth() {
-    if (currentUser) {
-        document.getElementById('user-name').textContent = currentUser.name;
-        document.getElementById('user-info').style.display = 'block';
-        document.querySelector('nav').style.display = 'flex';
-    } else {
-        document.getElementById('user-info').style.display = 'none';
-        document.querySelector('nav').style.display = 'none';
+        alert('Signup failed. Please try again.');
     }
 }
 
 function logout() {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('user');
-    authToken = null;
-    currentUser = null;
-    updateUIForAuth();
-    showLogin();
+    if (confirm('Are you sure you want to sign out?')) {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+        authToken = null;
+        currentUser = null;
+        toggleAppViews();
+        showMessage('You have been signed out successfully.', 'info');
+    }
 }
 
 // Modal functions
 function showLogin() {
     document.getElementById('loginModal').style.display = 'block';
+    document.getElementById('signupModal').style.display = 'none';
 }
 
 function showSignup() {
-    document.getElementById('loginModal').style.display = 'none';
     document.getElementById('signupModal').style.display = 'block';
+    document.getElementById('loginModal').style.display = 'none';
 }
 
 function closeModals() {
@@ -149,19 +115,47 @@ function closeModals() {
     document.getElementById('signupModal').style.display = 'none';
 }
 
-// Authentication headers
-function getAuthHeaders() {
-    if (!authToken) {
-        console.warn('No auth token available');
-        return {
-            'Content-Type': 'application/json'
-        };
+// Update UI when user is authenticated
+function updateUIForAuth() {
+    if (currentUser) {
+        document.getElementById('user-name').textContent = currentUser.name;
+        document.getElementById('user-info').style.display = 'block';
+    } else {
+        document.getElementById('user-info').style.display = 'none';
     }
-    return {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authToken}`
-    };
 }
+
+// Event listeners for auth forms
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    await login(email, password);
+});
+
+document.getElementById('signup-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('signup-name').value;
+    const email = document.getElementById('signup-email').value;
+    const password = document.getElementById('signup-password').value;
+    await signup(name, email, password);
+});
+
+// Close modals when clicking X or outside
+document.querySelectorAll('.close').forEach(closeBtn => {
+    closeBtn.addEventListener('click', closeModals);
+});
+
+window.addEventListener('click', (e) => {
+    if (e.target.classList.contains('modal')) {
+        closeModals();
+    }
+});
+
+// Initialize app
+document.addEventListener('DOMContentLoaded', function() {
+    checkAuthStatus();
+});
 
 // Dashboard Functions - SINGLE VERSION
 async function loadDashboard() {
