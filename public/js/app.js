@@ -1288,4 +1288,168 @@ function loadSectionData(section) {
         // ... other cases
     }
 }
+// Sidebar Navigation Functions
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    
+    sidebar.classList.toggle('open');
+    overlay.style.display = sidebar.classList.contains('open') ? 'block' : 'none';
+    
+    // Prevent body scroll when sidebar is open
+    document.body.style.overflow = sidebar.classList.contains('open') ? 'hidden' : '';
+}
+
+function closeSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    
+    sidebar.classList.remove('open');
+    overlay.style.display = 'none';
+    document.body.style.overflow = '';
+}
+
+// Close sidebar when clicking outside or pressing Escape
+document.addEventListener('click', function(event) {
+    const sidebar = document.getElementById('sidebar');
+    const hamburger = document.querySelector('.hamburger-menu');
+    
+    if (!sidebar.contains(event.target) && !hamburger.contains(event.target) && sidebar.classList.contains('open')) {
+        closeSidebar();
+    }
+});
+
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeSidebar();
+    }
+});
+
+// Update showSection to handle both desktop and mobile navigation
+function showSection(sectionName) {
+    console.log('Showing section:', sectionName);
+    
+    // Close sidebar on mobile after selection
+    if (window.innerWidth <= 1024) {
+        closeSidebar();
+    }
+    
+    // Hide all sections
+    document.querySelectorAll('.section').forEach(section => {
+        section.classList.remove('active');
+    });
+    
+    // Remove active class from all buttons
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Show selected section
+    const targetSection = document.getElementById(sectionName + '-section');
+    if (targetSection) {
+        targetSection.classList.add('active');
+    } else {
+        console.error('Section not found:', sectionName + '-section');
+        return;
+    }
+    
+    // Activate the clicked button (for desktop navigation)
+    if (event && event.target.classList.contains('nav-btn')) {
+        event.target.classList.add('active');
+    }
+    
+    // Load data for the section
+    loadSectionData(sectionName);
+}
+
+// Update UI for auth to include user dropdown
+function updateUIForAuth() {
+    if (currentUser) {
+        document.getElementById('user-name').textContent = currentUser.name;
+        document.getElementById('user-info').style.display = 'block';
+        
+        // Show appropriate navigation based on screen size
+        if (window.innerWidth > 1024) {
+            document.querySelector('.top-nav').style.display = 'flex';
+        }
+    } else {
+        document.getElementById('user-info').style.display = 'none';
+        document.querySelector('.top-nav').style.display = 'none';
+    }
+}
+
+// Handle window resize
+window.addEventListener('resize', function() {
+    const topNav = document.querySelector('.top-nav');
+    if (window.innerWidth > 1024 && currentUser) {
+        topNav.style.display = 'flex';
+    } else {
+        topNav.style.display = 'none';
+    }
+});
+
+// Update navigation when section loads
+function loadSectionData(section) {
+    console.log('Loading data for section:', section);
+    
+    if (!currentUser) {
+        console.log('No user logged in, skipping data load');
+        return;
+    }
+    
+    // Update active states for both desktop and mobile
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+    });
+    
+    // Add active class to current section
+    const activeBtn = Array.from(document.querySelectorAll('.nav-btn')).find(btn => 
+        btn.textContent.toLowerCase().includes(section)
+    );
+    if (activeBtn) {
+        activeBtn.classList.add('active');
+    }
+    
+    const activeLink = Array.from(document.querySelectorAll('.nav-link')).find(link => 
+        link.textContent.toLowerCase().includes(section)
+    );
+    if (activeLink) {
+        activeLink.classList.add('active');
+    }
+    
+    // Load section data
+    switch(section) {
+        case 'dashboard':
+            loadDashboard();
+            break;
+        case 'books':
+            loadBooks();
+            loadFilterOptions();
+            break;
+        case 'analytics':
+            loadAnalytics();
+            break;
+        case 'users':
+            loadUsers();
+            break;
+        case 'loans':
+            loadLoans();
+            break;
+        case 'reservations':
+            loadReservations();
+            break;
+        case 'profile':
+            loadProfile();
+            break;
+        case 'appearance':
+            loadAppearanceSettings();
+            break;
+        default:
+            console.log('Unknown section:', section);
+    }
+}
 
