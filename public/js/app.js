@@ -1084,6 +1084,16 @@ function displayBooks(books) {
                     
                     <p><strong>Added:</strong> ${new Date(book.created_at).toLocaleDateString()}</p>
                     
+                    <!-- ADD THE BOOK-ACTIONS BUTTONS HERE -->
+                    <div class="book-actions">
+                        <button onclick="generateBookLabel(${book.id})" class="barcode-btn">
+                            📄 Generate Label
+                        </button>
+                        <button onclick="showQRCode(${book.id})" class="qr-btn">
+                            🔳 Show QR Code
+                        </button>
+                    </div>
+                    
                     <div class="card-actions">
                         <button class="delete" onclick="deleteBook(${book.id})">Delete</button>
                     </div>
