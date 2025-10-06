@@ -79,7 +79,7 @@ router.get('/years', (req, res) => {
 });
 
 // CREATE Book with enhanced fields
-router.post('/', upload.single('cover_image'), (req, res) => {
+router.post('/', upload.single('cover_image'), (req, res) => { // FIXED: upload.single
     const { title, author, category, genre, published_year, isbn, tags } = req.body;
     
     // Validation
@@ -88,7 +88,7 @@ router.post('/', upload.single('cover_image'), (req, res) => {
     }
 
     const coverImagePath = req.file ? '/uploads/book-covers/' + req.file.filename : null;
-    
+
     // Parse tags if provided
     let tagsArray = [];
     if (tags) {
@@ -128,7 +128,7 @@ router.post('/', upload.single('cover_image'), (req, res) => {
 });
 
 // UPDATE Book with enhanced fields
-router.put('/:id', uploadBookCover.single('cover_image'), (req, res) => {
+router.put('/:id', upload.single('cover_image'), (req, res) => { // FIXED: upload.single
     const { id } = req.params;
     const { title, author, category, genre, published_year, isbn, tags, status } = req.body;
     
