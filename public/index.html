@@ -244,6 +244,15 @@
         <button onclick="applyFilters()">Apply Filters</button>
         <button onclick="clearFilters()">Clear</button>
     </div>
+    <!-- Add to books section, after the book details -->
+<div class="book-actions">
+    <button onclick="generateBookLabel(${book.id})" class="barcode-btn">
+        📄 Generate Label
+    </button>
+    <button onclick="showQRCode(${book.id})" class="qr-btn">
+        🔳 Show QR Code
+    </button>
+</div>
 
     <!-- Enhanced Add Book Form -->
     <div class="form-container">
@@ -271,6 +280,8 @@
             <button type="submit">Add Book</button>
         </form>
     </div>
+   
+    
 
     <!-- Search Bar -->
     <div class="search-container">
@@ -287,6 +298,9 @@
         </div>
     </div>
 </section>
+
+
+
      
      <!-- Analytics Section -->
 <section id="analytics-section" class="section">
@@ -481,6 +495,55 @@
             </div>
         </section>
     </div>
+
+    <!-- Notifications Section -->
+<section id="notifications-section" class="section">
+    <h2>🔔 Notifications</h2>
+    
+    <div class="notifications-container">
+        <div class="notification-controls">
+            <h3>Email Notifications</h3>
+            <div class="notification-stats">
+                <div class="stat-card">
+                    <h4>📧 Sent Today</h4>
+                    <div class="stat-number" id="sent-today">0</div>
+                </div>
+                <div class="stat-card">
+                    <h4>⏰ Due Soon</h4>
+                    <div class="stat-number" id="due-soon">0</div>
+                </div>
+                <div class="stat-card">
+                    <h4>⚠️ Overdue</h4>
+                    <div class="stat-number" id="overdue-count">0</div>
+                </div>
+            </div>
+            
+            <div class="manual-notification">
+                <h4>Send Manual Notification</h4>
+                <form id="manual-notification-form">
+                    <select id="notification-user" required>
+                        <option value="">Select User</option>
+                    </select>
+                    <select id="notification-book" required>
+                        <option value="">Select Book</option>
+                    </select>
+                    <select id="notification-type" required>
+                        <option value="due_reminder">Due Date Reminder</option>
+                        <option value="overdue">Overdue Notice</option>
+                    </select>
+                    <button type="submit">Send Notification</button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="notification-history">
+            <h3>Notification History</h3>
+            <div id="notification-list" class="notification-list">
+                <!-- Notifications will be loaded here -->
+            </div>
+        </div>
+    </div>
+</section>
 
     <!-- Login Modal -->
     <div id="loginModal" class="modal">

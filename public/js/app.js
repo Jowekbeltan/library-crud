@@ -1452,4 +1452,102 @@ function loadSectionData(section) {
             console.log('Unknown section:', section);
     }
 }
+// Notifications Functions
+async function loadNotifications() {
+    try {
+        if (!currentUser) return;
+        
+        const response = await fetch(`/notifications/user/${currentUser.id}`, {
+            headers: getAuthHeaders()
+        });
+        
+        if (response.ok) {
+            const notifications = await response.json();
+            displayNotifications(notifications);
+        }
+    } catch (error) {
+        console.error('Error loading notifications:', error);
+    }
+}
 
+function displayNotifications(notifications) {
+    const container = document.getElementById('notification-list');
+    
+    if (notifications.length === 0) {
+        container.innerHTML = '<p>No notifications yet.</p>';
+        return;
+    }
+    
+    container.innerHTML = notifications.map(notification => `
+        <div class="notification-item">
+            <div class="notification-info">
+                <h4>${notification.book_title}</h4>
+                <p>${new Date(notification.sent_at).toLocaleDateString()} • 
+                   <span class="notification-type type-${notification.type}">${notification.type}</span>
+                </p>
+            </div>
+            <div class="notification-status">
+                ${notification.status === 'sent' ? '✅' : '❌'}
+            </div>
+        </div>
+    `).join('');
+}
+
+// Barcode/QR Code Functions
+async function generateBookLabel(bookId) {
+    try {
+        console.log('Generating label for book:', bookId);
+        const response = await fetch(`/barcodes/book/${bookId}/label`, {
+            headers: getAuthHeaders()
+        });
+        
+        if (response.ok) {
+            const label = await response.json();
+            showBarcodeModal(label);
+        } else {
+            console.error('Failed to generate label:', response.status);
+            alert('Failed to generate book label');
+        }
+    } catch (error) {
+        console.error('Error generating book label:', error);
+        alert('Failed to generate book label: ' + error.message);
+    }
+}
+
+async function showQRCode(bookId) {
+    try {
+        console.log('Showing QR code for book:', bookId);
+        const qrUrl = `/barcodes/book/${bookId}/qr?width=300&height=300`;
+        
+        const modal = document.createElement('div');
+        modal.className = 'qr-modal';
+        modal.style.display = 'flex';
+        
+        modal.innerHTML = `
+            <div class="modal-content">
+                <h3>QR Code</h3>
+                <img src="${qrUrl}" alt="QR Code" class="qr-image">
+                <button class="print-btn" onclick="closeModal(this)">Close</button>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeModal(modal);
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error showing QR code:', error);
+        alert('Failed to show QR code: ' + error.message);
+    }
+}
+
+function closeModal(element) {
+    const modal = element.closest('.barcode-modal, .qr-modal');
+    if (modal) {
+        modal.remove();
+    }
+}

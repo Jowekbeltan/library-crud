@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const path = require('path');
 const app = express();
 
+
 app.use(bodyParser.json());
 app.use(express.static('public'));
 
@@ -14,6 +15,7 @@ const loansRoutes = require('./routes/loans');
 const reservationsRoutes = require('./routes/reservations');
 const preferencesRoutes = require('./routes/preferences');
 const notificationsRoutes = require('./routes/notifications'); // Add this
+const barcodeRoutes = require('./routes/barcodes');
 
 // Import and start notification service
 const notificationService = require('./services/notificationService');
@@ -26,6 +28,7 @@ app.use('/loans', loansRoutes);
 app.use('/reservations', reservationsRoutes);
 app.use('/preferences', preferencesRoutes);
 app.use('/notifications', notificationsRoutes); // Add this
+app.use('/barcodes', barcodeRoutes);
 
 // Public homepage
 app.get('/', (req, res) => {
