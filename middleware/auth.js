@@ -1,7 +1,8 @@
 const jwt = require('jsonwebtoken');
+require('dotenv').config();
 
-// Change this to a more secure secret in production!
-const JWT_SECRET = 'your-super-secret-jwt-key-ChangeThisInProduction123';
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key';
+
 
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
