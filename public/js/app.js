@@ -603,3 +603,228 @@ window.addEventListener('click', (e) => {
 document.addEventListener('DOMContentLoaded', function() {
     checkAuthStatus();
 });
+// Enhanced Profile Functions
+async function loadProfile() {
+    if (!currentUser) return;
+    
+    try {
+        // Load user details
+        const userResponse = await fetch(`/users/${currentUser.id}`, {
+            headers: getAuthHeaders()
+        });
+        
+        if (!userResponse.ok) {
+            throw new Error('Failed to load user data');
+        }
+        
+        const userData = await userResponse.json();
+        
+        // Update profile display
+        updateProfileDisplay(userData);
+        
+        // Load user activity
+        const [loans, reservations] = await Promise.all([
+            fetch('/loans', { headers: getAuthHeaders() }).then(r => r.json()),
+            fetch('/reservations', { headers: getAuthHeaders() }).then(r => r.json())
+        ]);
+        
+        updateProfileStats(loans, reservations, userData);
+        displayUserActivity(loans, reservations);
+        
+        // Set up profile picture upload
+        setupProfilePictureUpload();
+        
+    } catch (error) {
+        console.error('Error loading profile:', error);
+        showMessage('Error loading profile data', 'error');
+    }
+}
+
+function updateProfileDisplay(userData) {
+    // Update basic info
+    document.getElementById('profile-name').textContent = userData.name;
+    document.getElementById('profile-username').textContent = '@' + (userData.username || 'user');
+    document.getElementById('profile-email').textContent = userData.email;
+    document.getElementById('member-since').textContent = new Date(userData.created_at).toLocaleDateString();
+    
+    // Update form fields
+    document.getElementById('edit-name').value = userData.name;
+    document.getElementById('edit-username').value = userData.username || '';
+    document.getElementById('edit-email').value = userData.email;
+    
+    // Update profile picture
+    const profileImg = document.getElementById('profile-picture');
+    if (userData.profile_picture) {
+        profileImg.src = userData.profile_picture;
+    } else {
+        profileImg.src = '/images/default-avatar.png';
+    }
+}
+
+function updateProfileStats(loans, reservations, userData) {
+    const userLoans = loans.filter(loan => loan.user === userData.name || loan.user_id === userData.id);
+    const userReservations = reservations.filter(res => res.user === userData.name || res.user_id === userData.id);
+    const activeReservations = userReservations.filter(res => res.status === 'active');
+    
+    document.getElementById('books-borrowed').textContent = userLoans.length;
+    document.getElementById('active-reservations').textContent = activeReservations.length;
+}
+
+function setupProfilePictureUpload() {
+    const fileInput = document.getElementById('profile-picture-input');
+    
+    fileInput.addEventListener('change', async function(e) {
+        if (e.target.files.length === 0) return;
+        
+        const file = e.target.files[0];
+        
+        // Validate file size (5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            showMessage('File size must be less than 5MB', 'error');
+            return;
+        }
+        
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            showMessage('Please select an image file', 'error');
+            return;
+        }
+        
+        await uploadProfilePicture(file);
+    });
+}
+
+async function uploadProfilePicture(file) {
+    const formData = new FormData();
+    formData.append('profile_picture', file);
+    
+    try {
+        const response = await fetch(`/users/${currentUser.id}/profile-picture`, {
+            method: 'PUT',
+            body: formData
+            // Note: Don't set Content-Type header for FormData
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            // Update profile picture display
+            document.getElementById('profile-picture').src = result.profile_picture + '?t=' + Date.now();
+            showMessage('Profile picture updated successfully!', 'success');
+        } else {
+            showMessage('Error: ' + result.error, 'error');
+        }
+    } catch (error) {
+        console.error('Upload error:', error);
+        showMessage('Failed to upload profile picture', 'error');
+    }
+}
+
+async function removeProfilePicture() {
+    if (!confirm('Are you sure you want to remove your profile picture?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/users/${currentUser.id}/profile-picture`, {
+            method: 'DELETE',
+            headers: getAuthHeaders()
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            // Reset to default avatar
+            document.getElementById('profile-picture').src = '/images/default-avatar.png';
+            showMessage('Profile picture removed successfully!', 'success');
+        } else {
+            showMessage('Error: ' + result.error, 'error');
+        }
+    } catch (error) {
+        console.error('Remove error:', error);
+        showMessage('Failed to remove profile picture', 'error');
+    }
+}
+
+// Edit Profile Form Handler
+document.getElementById('edit-profile-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const name = document.getElementById('edit-name').value.trim();
+    const username = document.getElementById('edit-username').value.trim();
+    
+    if (!name || !username) {
+        showMessage('Please fill in all fields', 'error');
+        return;
+    }
+    
+    if (username.length < 3) {
+        showMessage('Username must be at least 3 characters long', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/users/${currentUser.id}`, {
+            method: 'PUT',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
+                name: name,
+                username: username
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            // Update current user data
+            currentUser.name = name;
+            currentUser.username = username;
+            localStorage.setItem('user', JSON.stringify(currentUser));
+            updateUIForAuth();
+            
+            // Reload profile to reflect changes
+            loadProfile();
+            showMessage('Profile updated successfully!', 'success');
+        } else {
+            showMessage('Error: ' + result.error, 'error');
+        }
+    } catch (error) {
+        console.error('Update error:', error);
+        showMessage('Failed to update profile', 'error');
+    }
+});
+
+// Utility function to show messages
+function showMessage(message, type = 'info') {
+    // Remove existing messages
+    const existingMessages = document.querySelectorAll('.profile-message');
+    existingMessages.forEach(msg => msg.remove());
+    
+    // Create new message
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `profile-message ${type}`;
+    messageDiv.textContent = message;
+    
+    // Insert at the top of profile section
+    const profileSection = document.getElementById('profile-section');
+    profileSection.insertBefore(messageDiv, profileSection.firstChild);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (messageDiv.parentNode) {
+            messageDiv.remove();
+        }
+    }, 5000);
+}
+
+// Update updateUIForAuth to include username
+function updateUIForAuth() {
+    if (currentUser) {
+        document.getElementById('user-name').textContent = currentUser.name;
+        document.getElementById('user-info').style.display = 'block';
+        document.querySelector('nav').style.display = 'flex';
+    } else {
+        document.getElementById('user-info').style.display = 'none';
+        document.querySelector('nav').style.display = 'none';
+    }
+}
