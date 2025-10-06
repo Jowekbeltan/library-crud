@@ -58,24 +58,78 @@
 
     <!-- Main App (Visible when logged in) -->
     <div id="main-app" class="container" style="display: none;">
-        <header>
+       <header>
+    <div class="header-content">
+        <!-- Hamburger Menu -->
+        <div class="hamburger-menu" onclick="toggleSidebar()">
+            <div class="hamburger-line"></div>
+            <div class="hamburger-line"></div>
+            <div class="hamburger-line"></div>
+        </div>
+        
+        <!-- Logo and Title -->
+        <div class="header-title">
             <h1>📚 Library Management System</h1>
-            <nav>
-                <button class="nav-btn active" onclick="showSection('dashboard')">📊 Dashboard</button>
-                <button class="nav-btn" onclick="showSection('books')">📚 Books</button>
-                <button class="nav-btn" onclick="showSection('analytics')">📈 Analytics</button>
-                <button class="nav-btn" onclick="showSection('users')">👥 Users</button>
-                <button class="nav-btn" onclick="showSection('loans')">📖 Loans</button>
-                <button class="nav-btn" onclick="showSection('reservations')">📅 Reservations</button>
-                <button class="nav-btn" onclick="showSection('profile')">👤 Profile</button>
-                <button class="nav-btn" onclick="showSection('appearance')">🎨 Appearance</button>
-            </nav>
-            
-            <div id="user-info" style="display: none;">
-                Welcome, <span id="user-name"></span>!
-                <button onclick="logout()">Logout</button>
+        </div>
+        
+        <!-- User Info -->
+        <div id="user-info" style="display: none;">
+            <div class="user-dropdown">
+                <span class="user-greeting">Welcome, <span id="user-name"></span>!</span>
+                <div class="dropdown-content">
+                    <a href="#" onclick="showSection('profile')">👤 My Profile</a>
+                    <a href="#" onclick="showSection('appearance')">🎨 Appearance</a>
+                    <a href="#" onclick="logout()">🚪 Logout</a>
+                </div>
             </div>
-        </header>
+        </div>
+    </div>
+
+    <!-- Sidebar Navigation -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h3>📚 Navigation</h3>
+            <button class="close-sidebar" onclick="toggleSidebar()">×</button>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="#" onclick="showSection('dashboard'); toggleSidebar();" class="nav-link">
+                📊 Dashboard
+            </a>
+            <a href="#" onclick="showSection('books'); toggleSidebar();" class="nav-link">
+                📚 Books
+            </a>
+            <a href="#" onclick="showSection('analytics'); toggleSidebar();" class="nav-link">
+                📈 Analytics
+            </a>
+            <a href="#" onclick="showSection('users'); toggleSidebar();" class="nav-link">
+                👥 Users
+            </a>
+            <a href="#" onclick="showSection('loans'); toggleSidebar();" class="nav-link">
+                📖 Loans
+            </a>
+            <a href="#" onclick="showSection('reservations'); toggleSidebar();" class="nav-link">
+                📅 Reservations
+            </a>
+            <a href="#" onclick="showSection('profile'); toggleSidebar();" class="nav-link">
+                👤 Profile
+            </a>
+            <a href="#" onclick="showSection('appearance'); toggleSidebar();" class="nav-link">
+                🎨 Appearance
+            </a>
+        </nav>
+    </div>
+
+    <!-- Top Navigation (for desktop) -->
+    <nav class="top-nav">
+        <button class="nav-btn active" onclick="showSection('dashboard')">📊 Dashboard</button>
+        <button class="nav-btn" onclick="showSection('books')">📚 Books</button>
+        <button class="nav-btn" onclick="showSection('analytics')">📈 Analytics</button>
+        <button class="nav-btn" onclick="showSection('users')">👥 Users</button>
+        <button class="nav-btn" onclick="showSection('loans')">📖 Loans</button>
+        <button class="nav-btn" onclick="showSection('reservations')">📅 Reservations</button>
+    </nav>
+</header>
 
         <!-- Dashboard Section -->
         <section id="dashboard-section" class="section active">
