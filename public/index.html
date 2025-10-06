@@ -1,24 +1,98 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📚 Library Management System</title>
-    <link rel="stylesheet" href="css/style.css">
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>📚 Library Management System</h1>
-            <nav>
-                <button class="nav-btn active" onclick="showSection('dashboard-section')">📊 Dashboard</button>
-                <button class="nav-btn" onclick="showSection('books-section')">📚 Books</button>
-                <button class="nav-btn" onclick="showSection('users-section')">👥 Users</button>
-                <button class="nav-btn" onclick="showSection('loans-section')">📖 Loans</button>
-                <button class="nav-btn" onclick="showSection('reservations-section')">📅 Reservations</button>
-                <button class="nav-btn" onclick="showSection('profile-section')">👤 Profile</button>
-            </nav>
-        </header>
+<header>
+    <div class="header-content">
+        <h1>📚 Library Management System</h1>
+        <div class="auth-section">
+            <div id="user-info" class="user-info" style="display: none;">
+                <span>Welcome, <strong id="user-name">User</strong></span>
+                <button onclick="logout()" class="logout-btn">🚪 Logout</button>
+            </div>
+            <div id="guest-info" class="guest-info">
+                <button onclick="showLogin()" class="login-btn">🔑 Login</button>
+            </div>
+        </div>
+    </div>
+    <nav>
+        <button class="nav-btn active" onclick="showSection('dashboard-section')">📊 Dashboard</button>
+        <button class="nav-btn" onclick="showSection('books-section')">📚 Books</button>
+        <button class="nav-btn" onclick="showSection('users-section')">👥 Users</button>
+        <button class="nav-btn" onclick="showSection('loans-section')">📖 Loans</button>
+        <button class="nav-btn" onclick="showSection('reservations-section')">📅 Reservations</button>
+        <button class="nav-btn" onclick="showSection('profile-section')">👤 Profile</button>
+        <button class="nav-btn" onclick="showSection('database-section')">📊 Database</button>
+    </nav>
+</header>
+
+<!-- Login Modal -->
+<div id="loginModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeLoginModal()">&times;</span>
+        <h2>🔑 Login to Library System</h2>
+        <form id="login-form">
+            <div class="form-group">
+                <label for="login-email">Email:</label>
+                <input type="email" id="login-email" placeholder="Enter your email" required>
+            </div>
+            <div class="form-group">
+                <label for="login-password">Password:</label>
+                <input type="password" id="login-password" placeholder="Enter your password" required>
+            </div>
+            <button type="submit" class="login-submit-btn">Login</button>
+        </form>
+        <div class="auth-links">
+            <p>Don't have an account? <a href="#" onclick="showSignup()">Sign up here</a></p>
+        </div>
+        
+        <!-- Demo Accounts -->
+        <div class="demo-accounts">
+            <h4>Demo Accounts:</h4>
+            <div class="demo-account" onclick="fillDemoCredentials('admin@library.com', 'admin123')">
+                <strong>Admin:</strong> admin@library.com / admin123
+            </div>
+            <div class="demo-account" onclick="fillDemoCredentials('librarian@library.com', 'lib123')">
+                <strong>Librarian:</strong> librarian@library.com / lib123
+            </div>
+            <div class="demo-account" onclick="fillDemoCredentials('user@library.com', 'user123')">
+                <strong>User:</strong> user@library.com / user123
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Signup Modal -->
+<div id="signupModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeSignupModal()">&times;</span>
+        <h2>👤 Create Account</h2>
+        <form id="signup-form">
+            <div class="form-group">
+                <label for="signup-name">Full Name:</label>
+                <input type="text" id="signup-name" placeholder="Enter your full name" required>
+            </div>
+            <div class="form-group">
+                <label for="signup-email">Email:</label>
+                <input type="email" id="signup-email" placeholder="Enter your email" required>
+            </div>
+            <div class="form-group">
+                <label for="signup-password">Password:</label>
+                <input type="password" id="signup-password" placeholder="Create a password (min. 6 characters)" required>
+            </div>
+            <div class="form-group">
+                <label for="signup-role">Role:</label>
+                <select id="signup-role" required>
+                    <option value="user">User</option>
+                    <option value="librarian">Librarian</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+            <button type="submit" class="signup-submit-btn">Create Account</button>
+        </form>
+        <div class="auth-links">
+            <p>Already have an account? <a href="#" onclick="showLogin()">Login here</a></p>
+        </div>
+    </div>
+</div>
 
         <!-- Dashboard Section -->
         <section id="dashboard-section" class="section active">

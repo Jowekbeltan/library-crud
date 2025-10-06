@@ -692,3 +692,241 @@ button.delete:hover {
         font-size: 2em;
     }
 }
+/* Header & Auth Styles */
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 30px;
+}
+
+.auth-section {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    color: white;
+    font-size: 14px;
+}
+
+.logout-btn {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.3s ease;
+}
+
+.logout-btn:hover {
+    background: #c0392b;
+    transform: translateY(-2px);
+}
+
+.login-btn {
+    background: #27ae60;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.login-btn:hover {
+    background: #219a52;
+    transform: translateY(-2px);
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    animation: fadeIn 0.3s ease;
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    width: 90%;
+    max-width: 400px;
+    position: relative;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from { transform: translateY(-50px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    position: absolute;
+    right: 20px;
+    top: 15px;
+}
+
+.close:hover {
+    color: #e74c3c;
+}
+
+.modal h2 {
+    text-align: center;
+    margin-bottom: 25px;
+    color: #2c3e50;
+}
+
+/* Auth Form Styles */
+#login-form, #signup-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.auth-form-group {
+    margin-bottom: 20px;
+}
+
+.auth-form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.auth-form-group input, .auth-form-group select {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: border-color 0.3s ease;
+}
+
+.auth-form-group input:focus, .auth-form-group select:focus {
+    outline: none;
+    border-color: #3498db;
+}
+
+.login-submit-btn, .signup-submit-btn {
+    width: 100%;
+    padding: 12px;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.login-submit-btn:hover, .signup-submit-btn:hover {
+    background: #2980b9;
+    transform: translateY(-2px);
+}
+
+.auth-links {
+    text-align: center;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.auth-links a {
+    color: #3498db;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.auth-links a:hover {
+    text-decoration: underline;
+}
+
+/* Demo Accounts */
+.demo-accounts {
+    margin-top: 25px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border-left: 4px solid #3498db;
+}
+
+.demo-accounts h4 {
+    margin: 0 0 15px 0;
+    color: #2c3e50;
+    font-size: 14px;
+    text-align: center;
+}
+
+.demo-account {
+    padding: 10px;
+    margin: 8px 0;
+    background: white;
+    border: 1px solid #e1e8ed;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 12px;
+}
+
+.demo-account:hover {
+    background: #3498db;
+    color: white;
+    transform: translateX(5px);
+}
+
+/* Role-based Styles */
+.role-admin { border-left: 4px solid #e74c3c; }
+.role-librarian { border-left: 4px solid #f39c12; }
+.role-user { border-left: 4px solid #27ae60; }
+
+/* Protected Content */
+.protected-content {
+    display: none;
+}
+
+.logged-in .protected-content {
+    display: block;
+}
+
+/* Responsive Auth */
+@media (max-width: 768px) {
+    .header-content {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .user-info {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .modal-content {
+        margin: 10% auto;
+        width: 95%;
+        padding: 20px;
+    }
+}
