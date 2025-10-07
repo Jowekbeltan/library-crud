@@ -4,8 +4,8 @@ const nodemailer = require('nodemailer');
 const emailConfig = {
     service: 'gmail',
     auth: {
-        user: process.env.EMAIL_USER || 'your-email@gmail.com',
-        pass: process.env.EMAIL_PASS || 'your-app-password'
+        user: 'ontwekajohnson502@gmail.com' || 'your-email@gmail.com',
+        pass: 'mnvxcaetzcejftde' || 'your-app-password'
     }
 };
 
