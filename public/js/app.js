@@ -1561,3 +1561,42 @@ function closeModal(element) {
         modal.remove();
     }
 }
+async function loadBooks() {
+    if (!currentUser) return;
+    
+    console.time('loadBooks'); // Start timer
+    
+    try {
+        console.log('🔄 Starting to load books...');
+        
+        // Build query string from filters
+        const queryParams = new URLSearchParams();
+        Object.keys(currentFilters).forEach(key => {
+            if (currentFilters[key]) {
+                queryParams.append(key, currentFilters[key]);
+            }
+        });
+        
+        const apiUrl = `/books?${queryParams}`;
+        console.log('📡 API URL:', apiUrl);
+        
+        const response = await fetch(apiUrl, {
+            headers: getAuthHeaders()
+        });
+        
+        console.log('📊 Response status:', response.status);
+        
+        if (!response.ok) throw new Error('Failed to load books');
+        
+        const books = await response.json();
+        console.log('📚 Books loaded:', books.length, 'books');
+        
+        displayBooks(books);
+        
+        console.timeEnd('loadBooks'); // End timer
+        
+    } catch (error) {
+        console.error('❌ Error loading books:', error);
+        console.timeEnd('loadBooks');
+    }
+}
