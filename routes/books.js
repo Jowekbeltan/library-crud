@@ -303,5 +303,128 @@ router.delete('/:id', (req, res) => {
         res.json({ message: 'Book deleted successfully' });
     });
 });
+// GET all books with filtering - OPTIMIZED VERSION
+router.get('/', (req, res) => {
+    const { category, genre, year, search, sortBy = 'title', sortOrder = 'ASC' } = req.query;
+    
+    console.time('booksQuery'); // Debug timing
+    
+    let sql = `
+        SELECT 
+            b.id, b.title, b.author, b.category, b.genre, 
+            b.published_year, b.isbn, b.cover_image, b.tags,
+            b.status, b.created_at,
+            COALESCE(ba.views_count, 0) as views_count,
+            COALESCE(ba.borrow_count, 0) as borrow_count
+        FROM books b
+        LEFT JOIN book_analytics ba ON b.id = ba.book_id
+        WHERE 1=1
+    `;
+    const params = [];
+
+    // Add filters - only if they have values
+    if (category && category !== '') {
+        sql += ' AND b.category = ?';
+        params.push(category);
+    }
+    if (genre && genre !== '') {
+        sql += ' AND b.genre = ?';
+        params.push(genre);
+    }
+    if (year && year !== '') {
+        sql += ' AND b.published_year = ?';
+        params.push(parseInt(year));
+    }
+    if (search && search.trim() !== '') {
+        sql += ' AND (b.title LIKE ? OR b.author LIKE ? OR b.isbn LIKE ?)';
+        const searchTerm = `%${search}%`;
+        params.push(searchTerm, searchTerm, searchTerm);
+    }
+
+    // Add sorting with validation
+    const validSortColumns = ['title', 'author', 'published_year', 'created_at', 'views_count', 'borrow_count'];
+    const validSortOrders = ['ASC', 'DESC'];
+    
+    const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'title';
+    const order = validSortOrders.includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'ASC';
+    
+    sql += ` ORDER BY ${sortColumn} ${order}`;
+
+    console.log('📊 Executing books query with params:', params);
+    
+    db.query(sql, params, (err, rows) => {
+        console.timeEnd('booksQuery'); // End timing
+        
+        if (err) {
+            console.error('❌ Database error:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+        
+        console.log(`✅ Query returned ${rows.length} books`);
+        res.json(rows);
+    });
+});
+// In routes/books.js - Add pagination
+router.get('/', (req, res) => {
+    const { 
+        category, genre, year, search, 
+        sortBy = 'title', sortOrder = 'ASC',
+        page = 1, limit = 50  // Add pagination
+    } = req.query;
+    
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    
+    let sql = `
+        SELECT 
+            b.id, b.title, b.author, b.category, b.genre, 
+            b.published_year, b.isbn, b.cover_image, b.tags,
+            b.status, b.created_at,
+            COALESCE(ba.views_count, 0) as views_count,
+            COALESCE(ba.borrow_count, 0) as borrow_count
+        FROM books b
+        LEFT JOIN book_analytics ba ON b.id = ba.book_id
+        WHERE 1=1
+    `;
+    const params = [];
+
+    // ... existing filters ...
+
+    // Add sorting
+    const validSortColumns = ['title', 'author', 'published_year', 'created_at', 'views_count', 'borrow_count'];
+    const validSortOrders = ['ASC', 'DESC'];
+    
+    const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'title';
+    const order = validSortOrders.includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'ASC';
+    
+    sql += ` ORDER BY ${sortColumn} ${order} LIMIT ? OFFSET ?`;
+    params.push(parseInt(limit), offset);
+
+    db.query(sql, params, (err, rows) => {
+        if (err) {
+            console.error('Database error:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+        
+        // Get total count for pagination
+        let countSql = 'SELECT COUNT(*) as total FROM books WHERE 1=1';
+        const countParams = [];
+        
+        // ... same filters as above ...
+        
+        db.query(countSql, countParams, (countErr, countResults) => {
+            if (countErr) {
+                res.json({ books: rows, total: rows.length });
+            } else {
+                res.json({ 
+                    books: rows, 
+                    total: countResults[0].total,
+                    page: parseInt(page),
+                    limit: parseInt(limit),
+                    totalPages: Math.ceil(countResults[0].total / parseInt(limit))
+                });
+            }
+        });
+    });
+});
 
 module.exports = router;
