@@ -1,5 +1,5 @@
 require('dotenv').config();
-const supabase = require('./config/supabase');
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
@@ -44,7 +44,7 @@ app.listen(PORT, () => {
     // Start notification service
     notificationService.start();
 });
-
+const supabase = require('./config/supabase');
 
 if (supabase) {
   console.log('🔗 Supabase is available');
