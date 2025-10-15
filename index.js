@@ -1,5 +1,11 @@
 require('dotenv').config();
 const supabase = require('./config/supabase');
+if (supabase) {
+  console.log('🔗 Supabase is available');
+} else {
+  console.log('📋 Using MySQL database only');
+}
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
@@ -46,10 +52,5 @@ app.listen(PORT, () => {
 });
 
 
-if (supabase) {
-  console.log('🔗 Supabase is available');
-} else {
-  console.log('📋 Using MySQL database only');
-}
 
 // Your existing server code...
