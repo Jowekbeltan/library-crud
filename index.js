@@ -44,3 +44,12 @@ app.listen(PORT, () => {
     // Start notification service
     notificationService.start();
 });
+const supabase = require('./config/supabase');
+
+if (supabase) {
+  console.log('🔗 Supabase is available');
+} else {
+  console.log('📋 Using MySQL database only');
+}
+
+// Your existing server code...
