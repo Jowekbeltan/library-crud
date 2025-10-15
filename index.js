@@ -1,3 +1,4 @@
+require('dotenv').config();
 const supabase = require('./config/supabase');
 const express = require('express');
 const bodyParser = require('body-parser');
