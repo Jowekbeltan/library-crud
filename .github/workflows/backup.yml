@@ -1,0 +1,34 @@
+# .github/workflows/backup.yml
+name: Supabase Backup
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Daily at 2 AM
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install postgresql-client
+          
+      - name: Backup database
+        env:
+          PGHOST: ${{ secrets.SUPABASE_HOST }}
+          PGUSER: ${{ secrets.SUPABASE_USER }}
+          PGPASSWORD: ${{ secrets.SUPABASE_PASSWORD }}
+          PGDATABASE: ${{ secrets.SUPABASE_DATABASE }}
+        run: |
+          pg_dump --data-only > backup_$(date +%Y%m%d).sql
+          
+      - name: Commit and push backup
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add backup_*.sql
+          git commit -m "Daily Supabase backup $(date +%Y%m%d)" || exit 0
+          git push

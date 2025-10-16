@@ -34,3 +34,8 @@ node_modules/
 
 # Yarn Integrity file
 .yarn-integrity
+ 
+ .env
+*.env.local
+config.json
+backup_*.sql
