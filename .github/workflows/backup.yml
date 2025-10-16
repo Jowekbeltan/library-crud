@@ -1,7 +1,9 @@
-# .github/workflows/backup-uri.yml
-name: Supabase Backup via URI
+# .github/workflows/backup.yml
+name: Supabase Backup
 on:
-  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * *'  # Daily at 2 AM UTC
+  workflow_dispatch:  # Manual trigger
 
 jobs:
   backup:
@@ -9,23 +11,63 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
-      - name: Setup PostgreSQL client
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client
-        
-      - name: Create backup using connection URI
-        env:
-          DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
-        run: |
-          # Use full connection string
-          pg_dump $DATABASE_URL --data-only --no-owner --no-acl > backup_$(date +%Y%m%d).sql
-          echo "Backup file created"
-          ls -la *.sql
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           
-      - name: Commit backup
+      - name: Setup PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+          echo "✅ PostgreSQL client installed"
+          
+      - name: Debug - Print connection info (without password)
+        run: |
+          echo "Host: ${{ secrets.SUPABASE_HOST }}"
+          echo "User: ${{ secrets.SUPABASE_USER }}"
+          echo "Database: ${{ secrets.SUPABASE_DATABASE }}"
+          echo "Port: 5432"
+          
+      - name: Test database connection
+        env:
+          PGHOST: ${{ secrets.SUPABASE_HOST }}
+          PGUSER: ${{ secrets.SUPABASE_USER }}
+          PGPASSWORD: ${{ secrets.SUPABASE_PASSWORD }}
+          PGDATABASE: ${{ secrets.SUPABASE_DATABASE }}
+          PGPORT: 5432
+        run: |
+          echo "Testing database connection..."
+          timeout 60s psql -c "\conninfo" && echo "✅ Connection successful" || echo "❌ Connection failed"
+          
+      - name: Create backup
+        env:
+          PGHOST: ${{ secrets.SUPABASE_HOST }}
+          PGUSER: ${{ secrets.SUPABASE_USER }}
+          PGPASSWORD: ${{ secrets.SUPABASE_PASSWORD }}
+          PGDATABASE: ${{ secrets.SUPABASE_DATABASE }}
+          PGPORT: 5432
+        run: |
+          echo "Starting backup..."
+          BACKUP_FILE="supabase_backup_$(date +%Y%m%d_%H%M%S).sql"
+          pg_dump --verbose --data-only --no-owner --no-acl > $BACKUP_FILE
+          
+          # Check if backup was created successfully
+          if [ -s "$BACKUP_FILE" ]; then
+            echo "✅ Backup created: $BACKUP_FILE"
+            echo "File size: $(wc -l < $BACKUP_FILE) lines"
+          else
+            echo "❌ Backup file is empty or missing"
+            exit 1
+          fi
+          
+      - name: Commit and push backup
         run: |
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
           git add *.sql
-          git commit -m "Backup $(date +%Y%m%d)" || echo "No changes"
-          git push
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Automated Supabase backup $(date -u +%Y%m%d_%H%M%S)"
+            git push
+            echo "✅ Backup committed successfully"
+          fi
