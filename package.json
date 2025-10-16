@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "export-data": "node scripts/export-data.js",
+    "backup": "npm run export-data && git add data/ && git commit -m 'Data backup' && git push"
   },
   "repository": {
     "type": "git",
