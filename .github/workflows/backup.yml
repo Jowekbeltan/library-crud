@@ -1,8 +1,6 @@
 # .github/workflows/backup.yml
 name: Supabase Backup
 on:
-  schedule:
-    - cron: '0 2 * * *'  # Daily at 2 AM UTC
   workflow_dispatch:  # Manual trigger
 
 jobs:
@@ -16,16 +14,18 @@ jobs:
           
       - name: Setup PostgreSQL client
         run: |
+          echo "🔄 Installing PostgreSQL client..."
           sudo apt-get update
           sudo apt-get install -y postgresql-client
-          echo "✅ PostgreSQL client installed"
+          echo "✅ PostgreSQL client installed successfully"
           
-      - name: Debug - Print connection info (without password)
+      - name: Debug - Check secrets exist
         run: |
-          echo "Host: ${{ secrets.SUPABASE_HOST }}"
-          echo "User: ${{ secrets.SUPABASE_USER }}"
-          echo "Database: ${{ secrets.SUPABASE_DATABASE }}"
-          echo "Port: 5432"
+          echo "🔍 Checking if secrets are set..."
+          if [ -z "${{ secrets.SUPABASE_HOST }}" ]; then echo "❌ SUPABASE_HOST is empty"; else echo "✅ SUPABASE_HOST is set"; fi
+          if [ -z "${{ secrets.SUPABASE_USER }}" ]; then echo "❌ SUPABASE_USER is empty"; else echo "✅ SUPABASE_USER is set"; fi
+          if [ -z "${{ secrets.SUPABASE_PASSWORD }}" ]; then echo "❌ SUPABASE_PASSWORD is empty"; else echo "✅ SUPABASE_PASSWORD is set"; fi
+          if [ -z "${{ secrets.SUPABASE_DATABASE }}" ]; then echo "❌ SUPABASE_DATABASE is empty"; else echo "✅ SUPABASE_DATABASE is set"; fi
           
       - name: Test database connection
         env:
@@ -35,8 +35,12 @@ jobs:
           PGDATABASE: ${{ secrets.SUPABASE_DATABASE }}
           PGPORT: 5432
         run: |
-          echo "Testing database connection..."
-          timeout 60s psql -c "\conninfo" && echo "✅ Connection successful" || echo "❌ Connection failed"
+          echo "🔌 Testing database connection to: $PGHOST"
+          echo "Command: psql -h $PGHOST -U $PGUSER -d $PGDATABASE -c 'SELECT version();'"
+          
+          # Test connection with timeout
+          timeout 30s psql -c "SELECT version();" || echo "❌ Connection failed or timed out"
+          echo "✅ Connection test completed"
           
       - name: Create backup
         env:
@@ -46,28 +50,31 @@ jobs:
           PGDATABASE: ${{ secrets.SUPABASE_DATABASE }}
           PGPORT: 5432
         run: |
-          echo "Starting backup..."
+          echo "💾 Creating backup..."
           BACKUP_FILE="supabase_backup_$(date +%Y%m%d_%H%M%S).sql"
           pg_dump --verbose --data-only --no-owner --no-acl > $BACKUP_FILE
           
-          # Check if backup was created successfully
-          if [ -s "$BACKUP_FILE" ]; then
-            echo "✅ Backup created: $BACKUP_FILE"
-            echo "File size: $(wc -l < $BACKUP_FILE) lines"
+          # Check if backup file was created
+          if [ -f "$BACKUP_FILE" ]; then
+            echo "✅ Backup file created: $BACKUP_FILE"
+            echo "📊 File size: $(wc -c < "$BACKUP_FILE") bytes"
+            echo "📄 First 5 lines:"
+            head -5 "$BACKUP_FILE"
           else
-            echo "❌ Backup file is empty or missing"
+            echo "❌ Backup file was not created!"
             exit 1
           fi
           
       - name: Commit and push backup
         run: |
+          echo "📦 Committing backup to repository..."
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
           git add *.sql
           if git diff --staged --quiet; then
-            echo "No changes to commit"
+            echo "⚠️ No changes to commit"
           else
-            git commit -m "Automated Supabase backup $(date -u +%Y%m%d_%H%M%S)"
+            git commit -m "🤖 Automated Supabase backup $(date -u +%Y%m%d_%H%M%S)"
             git push
-            echo "✅ Backup committed successfully"
+            echo "✅ Backup committed and pushed successfully"
           fi
