@@ -1,7 +1,7 @@
-# .github/workflows/backup.yml
-name: Supabase Backup
+# .github/workflows/backup-api.yml
+name: Supabase Backup via API
 on:
-  workflow_dispatch:  # Manual trigger
+  workflow_dispatch:
 
 jobs:
   backup:
@@ -12,69 +12,100 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           
-      - name: Setup PostgreSQL client
-        run: |
-          echo "🔄 Installing PostgreSQL client..."
-          sudo apt-get update
-          sudo apt-get install -y postgresql-client
-          echo "✅ PostgreSQL client installed successfully"
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
           
-      - name: Debug - Check secrets exist
+      - name: Create backup script
         run: |
-          echo "🔍 Checking if secrets are set..."
-          if [ -z "${{ secrets.SUPABASE_HOST }}" ]; then echo "❌ SUPABASE_HOST is empty"; else echo "✅ SUPABASE_HOST is set"; fi
-          if [ -z "${{ secrets.SUPABASE_USER }}" ]; then echo "❌ SUPABASE_USER is empty"; else echo "✅ SUPABASE_USER is set"; fi
-          if [ -z "${{ secrets.SUPABASE_PASSWORD }}" ]; then echo "❌ SUPABASE_PASSWORD is empty"; else echo "✅ SUPABASE_PASSWORD is set"; fi
-          if [ -z "${{ secrets.SUPABASE_DATABASE }}" ]; then echo "❌ SUPABASE_DATABASE is empty"; else echo "✅ SUPABASE_DATABASE is set"; fi
+          cat > backup.js << 'EOF'
+          const { createClient } = require('@supabase/supabase-js');
+          const fs = require('fs');
+
+          const supabase = createClient(
+            process.env.SUPABASE_URL,
+            process.env.SUPABASE_SERVICE_KEY
+          );
+
+          async function backupTable(tableName) {
+            console.log(`Backing up table: ${tableName}`);
+            
+            let allData = [];
+            let from = 0;
+            const limit = 1000;
+            let hasMore = true;
+
+            while (hasMore) {
+              const { data, error, count } = await supabase
+                .from(tableName)
+                .select('*', { count: 'exact' })
+                .range(from, from + limit - 1);
+              
+              if (error) {
+                throw new Error(`Error backing up ${tableName}: ${error.message}`);
+              }
+              
+              if (data && data.length > 0) {
+                allData = allData.concat(data);
+                from += limit;
+              } else {
+                hasMore = false;
+              }
+              
+              if (count && from >= count) {
+                hasMore = false;
+              }
+            }
+            
+            return allData;
+          }
+
+          async function main() {
+            try {
+              console.log('Starting Supabase backup via API...');
+              
+              // Backup each table - ADD YOUR TABLE NAMES HERE
+              const tables = ['books', 'users']; // Replace with your actual table names
+              
+              const backup = {
+                timestamp: new Date().toISOString(),
+                tables: {}
+              };
+
+              for (const table of tables) {
+                backup.tables[table] = await backupTable(table);
+                console.log(`✅ ${table}: ${backup.tables[table].length} records`);
+              }
+
+              // Save backup file
+              const filename = `supabase_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+              fs.writeFileSync(filename, JSON.stringify(backup, null, 2));
+              
+              console.log(`✅ Backup completed: ${filename}`);
+              console.log(`Total records: ${Object.values(backup.tables).flat().length}`);
+              
+            } catch (error) {
+              console.error('❌ Backup failed:', error.message);
+              process.exit(1);
+            }
+          }
+
+          main();
+          EOF
           
-      - name: Test database connection
+      - name: Install dependencies and run backup
         env:
-          PGHOST: ${{ secrets.SUPABASE_HOST }}
-          PGUSER: ${{ secrets.SUPABASE_USER }}
-          PGPASSWORD: ${{ secrets.SUPABASE_PASSWORD }}
-          PGDATABASE: ${{ secrets.SUPABASE_DATABASE }}
-          PGPORT: 5432
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: |
-          echo "🔌 Testing database connection to: $PGHOST"
-          echo "Command: psql -h $PGHOST -U $PGUSER -d $PGDATABASE -c 'SELECT version();'"
-          
-          # Test connection with timeout
-          timeout 30s psql -c "SELECT version();" || echo "❌ Connection failed or timed out"
-          echo "✅ Connection test completed"
-          
-      - name: Create backup
-        env:
-          PGHOST: ${{ secrets.SUPABASE_HOST }}
-          PGUSER: ${{ secrets.SUPABASE_USER }}
-          PGPASSWORD: ${{ secrets.SUPABASE_PASSWORD }}
-          PGDATABASE: ${{ secrets.SUPABASE_DATABASE }}
-          PGPORT: 5432
-        run: |
-          echo "💾 Creating backup..."
-          BACKUP_FILE="supabase_backup_$(date +%Y%m%d_%H%M%S).sql"
-          pg_dump --verbose --data-only --no-owner --no-acl > $BACKUP_FILE
-          
-          # Check if backup file was created
-          if [ -f "$BACKUP_FILE" ]; then
-            echo "✅ Backup file created: $BACKUP_FILE"
-            echo "📊 File size: $(wc -c < "$BACKUP_FILE") bytes"
-            echo "📄 First 5 lines:"
-            head -5 "$BACKUP_FILE"
-          else
-            echo "❌ Backup file was not created!"
-            exit 1
-          fi
+          npm install @supabase/supabase-js
+          node backup.js
           
       - name: Commit and push backup
         run: |
-          echo "📦 Committing backup to repository..."
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
-          git add *.sql
-          if git diff --staged --quiet; then
-            echo "⚠️ No changes to commit"
-          else
-            git commit -m "🤖 Automated Supabase backup $(date -u +%Y%m%d_%H%M%S)"
-            git push
-            echo "✅ Backup committed and pushed successfully"
-          fi
+          git add *.json
+          git commit -m "🤖 Supabase API backup $(date -u +%Y%m%d_%H%M%S)" || echo "No changes to commit"
+          git push
