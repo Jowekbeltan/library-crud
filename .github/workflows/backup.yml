@@ -1,7 +1,8 @@
-# .github/workflows/backup-api.yml
 name: Supabase Backup via API
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * *'  # Daily at 2 AM
 
 jobs:
   backup:
@@ -29,7 +30,7 @@ jobs:
           );
 
           async function backupTable(tableName) {
-            console.log(`Backing up table: ${tableName}`);
+            console.log(`📋 Backing up table: ${tableName}`);
             
             let allData = [];
             let from = 0;
@@ -37,9 +38,9 @@ jobs:
             let hasMore = true;
 
             while (hasMore) {
-              const { data, error, count } = await supabase
+              const { data, error } = await supabase
                 .from(tableName)
-                .select('*', { count: 'exact' })
+                .select('*')
                 .range(from, from + limit - 1);
               
               if (error) {
@@ -49,11 +50,14 @@ jobs:
               if (data && data.length > 0) {
                 allData = allData.concat(data);
                 from += limit;
+                console.log(`  ↳ Fetched ${data.length} records from ${tableName}...`);
               } else {
                 hasMore = false;
               }
               
-              if (count && from >= count) {
+              // Safety break
+              if (from > 10000) {
+                console.log('  ⚠️  Reached safety limit of 10,000 records');
                 hasMore = false;
               }
             }
@@ -63,27 +67,41 @@ jobs:
 
           async function main() {
             try {
-              console.log('Starting Supabase backup via API...');
+              console.log('🚀 Starting Supabase backup via API...');
+              console.log(`📅 Backup time: ${new Date().toISOString()}`);
               
-              // Backup each table - ADD YOUR TABLE NAMES HERE
-              const tables = ['books', 'users']; // Replace with your actual table names
+              // ⚠️ IMPORTANT: Replace these with your actual table names
+              const tables = ['books','loans','notifications','reservations','sessions','user_preferences','users']; // Add your table names here
               
               const backup = {
-                timestamp: new Date().toISOString(),
+                backup_timestamp: new Date().toISOString(),
+                database: 'library-crud',
                 tables: {}
               };
 
+              let totalRecords = 0;
+              
               for (const table of tables) {
-                backup.tables[table] = await backupTable(table);
-                console.log(`✅ ${table}: ${backup.tables[table].length} records`);
+                const tableData = await backupTable(table);
+                backup.tables[table] = tableData;
+                totalRecords += tableData.length;
+                console.log(`✅ ${table}: ${tableData.length} records backed up`);
               }
 
               // Save backup file
-              const filename = `supabase_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+              const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+              const filename = `supabase-backup-${timestamp}.json`;
+              
               fs.writeFileSync(filename, JSON.stringify(backup, null, 2));
               
-              console.log(`✅ Backup completed: ${filename}`);
-              console.log(`Total records: ${Object.values(backup.tables).flat().length}`);
+              console.log('');
+              console.log('🎉 Backup completed successfully!');
+              console.log(`📁 File: ${filename}`);
+              console.log(`📊 Total records: ${totalRecords}`);
+              
+              // List all backup files
+              const files = fs.readdirSync('.').filter(f => f.includes('supabase-backup-'));
+              console.log(`📦 Total backup files in repo: ${files.length}`);
               
             } catch (error) {
               console.error('❌ Backup failed:', error.message);
@@ -94,19 +112,22 @@ jobs:
           main();
           EOF
           
-      - name: Install dependencies and run backup
+      - name: Install dependencies
+        run: npm install @supabase/supabase-js
+          
+      - name: Run backup
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-        run: |
-          npm install @supabase/supabase-js
-          node backup.js
+        run: node backup.js
+          
+      - name: List generated files
+        run: ls -la *.json || echo "No JSON files found"
           
       - name: Commit and push backup
         run: |
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
           git add *.json
-          git commit -m "🤖 Supabase API backup $(date -u +%Y%m%d_%H%M%S)" || echo "No changes to commit"
+          git commit -m "📦 Supabase backup $(date -u +'%Y-%m-%d %H:%M')" || echo "No changes to commit"
           git push
-          
